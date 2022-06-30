@@ -1,0 +1,11 @@
+8bc51bdabcac35384ffa6a462ab730ef *DESCRIPTION
+dde5b85a0297441da2d5f51236f06971 *NAMESPACE
+52c5fc9356366cd231c797cae233a273 *R/baseCH.R
+f9f0fab797a25b5d91fe8c51b63d557c *R/frailtyWL.R
+7b5a9e95dec8dafbf3ca92258ca1a8a1 *R/print.extrafrail.R
+6d316480391d32ab9af7e3b8dd951191 *R/rWL.R
+b27099c9259e41a735d92f999d45f026 *R/summary.extrafrail.R
+d149bf7e8064bf6f3cb362375ef32c92 *man/baseCH.Rd
+605fc172bf55e7c0fb79fb9917090fbe *man/frailtyWL.Rd
+581064efe27755fc40141ddfe7262827 *man/rWL.Rd
+4adba351c5a5e7efbfd1bf304240acb0 *man/tools.extrafrail.Rd

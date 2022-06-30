@@ -1,0 +1,78 @@
+\name{frailtyWL}
+\alias{frailtyWL}
+%- Also NEED an '\alias' for EACH other topic documented here.
+\title{
+Fitted a multivariate weighted Lindley frailty model
+}
+\description{
+frailtyWL computes the maximum likelihood estimates based on the EM algorithm for the
+multivariate weighted Lindley frailty model. 
+}
+\usage{
+frailtyWL(formula, data, dist = "np", prec = 1e-04, max.iter = 1000)
+}
+%- maybe also 'usage' for other objects documented here.
+\arguments{
+  \item{formula}{
+A formula that contains on the left hand side an object of the type Surv and on the right hand side a 
++cluster(id) statement, possibly with the covariates definition.
+}
+  \item{data}{
+A data.frame in which the formula argument can be evaluated
+}
+  \item{dist}{
+the distribution assumed for the basal model. Supported values: weibull and np (non-parametric).
+}
+  \item{prec}{
+The convergence tolerance for parameters.  
+}
+  \item{max.iter}{
+The maximum number of iterations.
+}
+}
+\details{
+For the weibull distribution as the basal model, the M1-step is performed based on the
+survreg function from the survival package. For the non-parametric case, the M1-step
+is based on the coxph function from the same package.
+}
+\value{
+an object of class "extrafrail" is returned. The object returned for this functions is a list containing the following
+components:
+\item{coefficients}{A named vector of coefficients}
+\item{se}{A named vector of the standard errors for the estimated coefficients.}
+\item{t}{The vector of times.}
+\item{delta}{The failure indicators.}
+\item{id}{A variable indicating the cluster which belongs each observation.}
+\item{x}{The regressor matrix based on cov.formula (without intercept term).}
+\item{dist}{The distribution assumed for the basal model.}
+\item{tau}{The Kendall's tau coefficient.}
+\item{logLik}{The log-likelihood function (only when the Weibull model is specified for the basal distribution).}
+\item{Lambda0}{The observed times and the associated cumulative hazard function (only when the non-parametric
+option is specified for the basal distribution)}
+}
+\references{
+Gallardo, D.I., Bourguignon, M. (2022) The multivariate weighted Lindley frailty model for
+cluster failure time data. Submitted.
+}
+\author{
+Diego Gallardo and Marcelo Bourguignon.
+}
+\examples{
+\donttest{
+require(survival)
+#require(frailtypack)
+data(readmission, package="frailtypack")
+fit <- frailtyWL(survival::Surv(time, event) ~ dukes + survival::cluster(id), 
+data = readmission)
+summary(fit)
+}
+}
+% Add one or more standard keywords, see file 'KEYWORDS' in the
+% R documentation directory (show via RShowDoc("KEYWORDS")):
+% \keyword{ ~kwd1 }
+% \keyword{ ~kwd2 }
+% Use only one keyword per line.
+% For non-standard keywords, use \concept instead of \keyword:
+% \concept{ ~cpt1 }
+% \concept{ ~cpt2 }
+% Use only one concept per line.
