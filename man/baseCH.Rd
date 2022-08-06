@@ -38,8 +38,9 @@ Diego Gallardo and Marcelo Bourguignon.
 #require(frailtypack)
 require(survival)
 data(readmission, package="frailtypack")
-fit <- frailtyWL(survival::Surv(time, event) ~ dukes + survival::cluster(id), 
-data = readmission)
-baseCH(c(500,1000,1500),fit)
+#Example for WL frailty model
+fit.WL <- frailty.fit(survival::Surv(time, event) ~ dukes + survival::cluster(id), 
+dist.frail="WL", data = readmission)
+baseCH(c(500,1000,1500),fit.WL)
 }
 }

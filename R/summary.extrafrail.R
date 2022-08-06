@@ -30,12 +30,33 @@ pnorm(abs(object$coefficients/object$se),lower.tail=FALSE))
  colnames(tt)<-c("coef","s.e.","exp(coef)","z value","Pr(>|z|)","")
 uni<-all(as.numeric(names(table(table(object$id))))==1)
 bi<-all(as.numeric(names(table(table(object$id))))==2)
-if(uni) cat("Univariate frailty weighted Lindley model with\n",ifelse(object$dist=="np",
+if(object$dist.frail=="WL")
+{
+if(uni) cat("Univariate weighted Lindley frailty model with\n",ifelse(object$dist=="np",
 "non-parametric",object$dist)," survival function\n",sep="")
-if(bi) cat("Bivariate frailty weighted Lindley model with\n",ifelse(object$dist=="np",
+if(bi) cat("Bivariate weighted Lindley frailty model with\n",ifelse(object$dist=="np",
 "non-parametric",object$dist)," survival function\n",sep="")
-if(!uni & !bi) cat("Multivariate frailty weighted Lindley model with\n",ifelse(object$dist=="np",
+if(!uni & !bi) cat("Multivariate weighted Lindley frailty model with\n",ifelse(object$dist=="np",
 "non-parametric",object$dist)," survival function\n",sep="")
+}
+if(object$dist.frail=="GA")
+{
+if(uni) cat("Univariate gamma frailty model with\n",ifelse(object$dist=="np",
+"non-parametric",object$dist)," survival function\n",sep="")
+if(bi) cat("Bivariate gamma frailty model with\n",ifelse(object$dist=="np",
+"non-parametric",object$dist)," survival function\n",sep="")
+if(!uni & !bi) cat("Multivariate gamma frailty model with\n",ifelse(object$dist=="np",
+"non-parametric",object$dist)," survival function\n",sep="")
+}
+if(object$dist.frail=="IG")
+{
+if(uni) cat("Univariate inverse gaussian frailty model with\n",ifelse(object$dist=="np",
+"non-parametric",object$dist)," survival function\n",sep="")
+if(bi) cat("Bivariate inverse gaussian frailty model with\n",ifelse(object$dist=="np",
+"non-parametric",object$dist)," survival function\n",sep="")
+if(!uni & !bi) cat("Multivariate inverse gaussian frailty model with\n",ifelse(object$dist=="np",
+"non-parametric",object$dist)," survival function\n",sep="")
+}
 if(length(object$coefficients)>1)
       {
 if(object$dist=="np")

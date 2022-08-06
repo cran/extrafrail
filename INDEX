@@ -1,0 +1,4 @@
+baseCH           Computes the baseline cumulative hazard function.
+frailty.fit      Fitted different shared frailty models
+rWL              Generated random variables from the weighted Lindley distribution.
+tools.extrafrail Print a summary for a object of the "extrafrail" class.

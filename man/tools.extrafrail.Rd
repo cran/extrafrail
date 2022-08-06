@@ -21,6 +21,8 @@ for extra arguments.}
 }
 \details{
 Supported frailty models are:
+- gamma frailty model
+- inverse gaussian frailty model
 - weighted frailty model 
 }
 \value{
@@ -36,8 +38,8 @@ Diego Gallardo and Marcelo Bourguignon.}
 #require(frailtypack)
 require(survival)
 data(readmission, package="frailtypack")
-fit <- frailtyWL(survival::Surv(time, event) ~ dukes + survival::cluster(id), 
-data = readmission)
+fit <- frailty.fit(survival::Surv(time, event) ~ dukes + survival::cluster(id), 
+dist.frail="WL", data = readmission)
 summary(fit)
 }
 }
