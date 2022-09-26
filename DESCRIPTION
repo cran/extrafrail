@@ -2,8 +2,8 @@ Package: extrafrail
 Type: Package
 Title: Estimation and Additional Tools for Alternative Shared Frailty
         Models
-Version: 1.1
-Date: 2022-08-04
+Version: 1.2
+Date: 2022-09-26
 Authors@R: c(person("Diego", "Gallardo", role = c("aut","cre"), email = "diego.gallardo@uda.cl"),
 	person("Marcelo", "Bourguignon", role = "aut", email = "m.p.bourguignon@gmail.com"))
 Author: Diego Gallardo [aut, cre],
@@ -20,6 +20,6 @@ Imports: survival, pracma, expint
 Suggests: frailtypack
 License: GPL (>= 2)
 NeedsCompilation: no
-Packaged: 2022-08-06 01:54:23 UTC; Usuario
+Packaged: 2022-09-26 20:03:40 UTC; Usuario
 Repository: CRAN
-Date/Publication: 2022-08-06 06:40:01 UTC
+Date/Publication: 2022-09-26 21:10:02 UTC

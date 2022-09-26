@@ -1,3 +1,7 @@
+### 1.2
+
+* fixed bugs in summary.extrafrail function
+
 ### 1.1
 
 * function frailtyWL was deprecated

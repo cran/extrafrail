@@ -25,7 +25,7 @@ asterisk<-function (x)
 }
  tt<-cbind(object$coefficients,object$se,exp(object$coefficients),object$coefficients/object$se,
 pnorm(abs(object$coefficients/object$se),lower.tail=FALSE))
-    ast = sapply(tt[,4],FUN=asterisk)
+    ast = sapply(tt[,5],FUN=asterisk)
     tt = data.frame(round(tt, 5), ast)
  colnames(tt)<-c("coef","s.e.","exp(coef)","z value","Pr(>|z|)","")
 uni<-all(as.numeric(names(table(table(object$id))))==1)
