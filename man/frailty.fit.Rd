@@ -22,8 +22,8 @@ A formula that contains on the left hand side an object of the type Surv and on 
 A data.frame in which the formula argument can be evaluated
 }
   \item{dist.frail}{
-the distribution assumed for the frailty. Supported values: gamma, IG (inverse gaussian) and WL
-(weighted Lindley).
+the distribution assumed for the frailty. Supported values: gamma, IG (inverse gaussian), WL
+(weighted Lindley) and BS (Birnbaum-Saunders).
 }
   \item{dist}{
 the distribution assumed for the basal model. Supported values: weibull and np (non-parametric).

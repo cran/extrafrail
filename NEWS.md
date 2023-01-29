@@ -1,3 +1,7 @@
+### 1.3
+
+* option BS (Birnbaum-Saunders) was added in frailty.fit function
+
 ### 1.2
 
 * fixed bugs in summary.extrafrail function

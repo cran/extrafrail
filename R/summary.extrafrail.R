@@ -57,6 +57,15 @@ if(bi) cat("Bivariate inverse gaussian frailty model with\n",ifelse(object$dist=
 if(!uni & !bi) cat("Multivariate inverse gaussian frailty model with\n",ifelse(object$dist=="np",
 "non-parametric",object$dist)," survival function\n",sep="")
 }
+if(object$dist.frail=="BS")
+{
+if(uni) cat("Univariate Birnbaum-Saunders frailty model with\n",ifelse(object$dist=="np",
+"non-parametric",object$dist)," survival function\n",sep="")
+if(bi) cat("Bivariate Birnbaum-Saunders frailty model with\n",ifelse(object$dist=="np",
+"non-parametric",object$dist)," survival function\n",sep="")
+if(!uni & !bi) cat("Multivariate Birnbaum-Saunders frailty model with\n",ifelse(object$dist=="np",
+"non-parametric",object$dist)," survival function\n",sep="")
+}
 if(length(object$coefficients)>1)
       {
 if(object$dist=="np")

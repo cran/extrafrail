@@ -30,6 +30,15 @@ if(bi) cat("Bivariate inverse gaussian frailty model with\n",ifelse(x$dist=="np"
 if(!uni & !bi) cat("Multivariate inverse gaussian frailty model with\n",ifelse(x$dist=="np",
 "non-parametric",x$dist)," survival function\n",sep="")
 }
+if(x$dist.frail=="BS")
+{
+if(uni) cat("Univariate Birnbaum-Saunders frailty model with\n",ifelse(x$dist=="np",
+"non-parametric",x$dist)," survival function\n",sep="")
+if(bi) cat("Bivariate Birnbaum-Saunders frailty model with\n",ifelse(x$dist=="np",
+"non-parametric",x$dist)," survival function\n",sep="")
+if(!uni & !bi) cat("Multivariate Birnbaum-Saunders frailty model with\n",ifelse(x$dist=="np",
+"non-parametric",x$dist)," survival function\n",sep="")
+}
     cat("\n")
         cat("Coefficients:\n")
         print.default(format(x$coefficients, digits = digits), print.gap = 2L, 
