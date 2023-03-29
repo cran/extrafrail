@@ -7,6 +7,7 @@ importFrom("stats", "integrate","model.frame","model.matrix",
 importFrom("survival", "survreg", "coxph","basehaz","cluster")
 importFrom("pracma", "hessian")
 importFrom("expint", "expint_E1")
+importFrom("msm", "dpexp", "ppexp")
 
 
 

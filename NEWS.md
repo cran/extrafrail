@@ -1,3 +1,7 @@
+### 1.4
+
+* option pe (piecewise exponential) was added in frailty.fit function as baseline model
+
 ### 1.3
 
 * option BS (Birnbaum-Saunders) was added in frailty.fit function

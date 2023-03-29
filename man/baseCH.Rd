@@ -21,7 +21,11 @@ an object with extrafrail class.
 }
 \details{
 Provides the baseline cumulative hazard function. When the baseline distribution is assumed as
-the Weibull model, this function is \eqn{\Lambda_0(t)=\lambda t^{\rho}}. 
+the Weibull model, this function is \eqn{\Lambda_0(t)=\lambda t^{\rho}}. For the piecewise
+exponential model, this function is \eqn{\Lambda_0(t)=\sum_{j=1}^L \lambda_j \nabla_j(t)},
+where \eqn{\nabla_j(t)=0, } if \eqn{t<a_{j-1}}, \eqn{\nabla_j(t)=t-a_{j-1}, } if \eqn{a_{j-1}\leq t < a_{j}}
+and \eqn{\nabla_j(t)=a_j-a_{j-1}, } if \eqn{t\geq a_{j}}, with \eqn{a=(a_0=0, a_1, \ldots, a_{j-1}),} the 
+corresponding partition time.
 }
 \value{
 a vector with the same length that t, including the baseline cumulative hazard function related to t.

@@ -10,7 +10,7 @@ shared gamma, inverse gaussian and weighted Lindley frailty models.
 }
 \usage{
 frailty.fit(formula, data, dist.frail="gamma", dist = "np", prec = 1e-04, 
-        max.iter = 1000)
+        max.iter = 1000, part=NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -22,11 +22,12 @@ A formula that contains on the left hand side an object of the type Surv and on 
 A data.frame in which the formula argument can be evaluated
 }
   \item{dist.frail}{
-the distribution assumed for the frailty. Supported values: gamma, IG (inverse gaussian), WL
+the distribution assumed for the frailty. Supported values: gamma (GA also is valid), IG (inverse gaussian), WL
 (weighted Lindley) and BS (Birnbaum-Saunders).
 }
   \item{dist}{
-the distribution assumed for the basal model. Supported values: weibull and np (non-parametric).
+the distribution assumed for the basal model. Supported values: weibull, pe (piecewise exponential)
+and np (non-parametric).
 }
   \item{prec}{
 The convergence tolerance for parameters.  
@@ -34,10 +35,14 @@ The convergence tolerance for parameters.
   \item{max.iter}{
 The maximum number of iterations.
 }
+  \item{part}{
+partition time (only for piecewise exponential distribution).
+}
 }
 \details{
-For the weibull distribution as the basal model, the M1-step is performed using the optim function. 
-For the non-parametric case, the M1-step is based on the coxph function from the survival package.
+For the weibull and piecewise exponential distributions as the basal model, the M1-step is performed 
+using the optim function. For the non-parametric case, the M1-step is based on the coxph function 
+from the survival package.
 }
 \value{
 an object of class "extrafrail" is returned. The object returned for this functions is a list containing the following
@@ -54,6 +59,7 @@ components:
 \item{logLik}{The log-likelihood function (only when the Weibull model is specified for the basal distribution).}
 \item{Lambda0}{The observed times and the associated cumulative hazard function (only when the non-parametric
 option is specified for the basal distribution)}
+\item{part}{the partition time (only for piecewise exponential model).}
 }
 \references{
 Gallardo, D.I., Bourguignon, M. (2022) The shared weighted Lindley frailty model for
