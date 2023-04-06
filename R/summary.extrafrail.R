@@ -105,11 +105,22 @@ summary.extrafrail=function (object, ...)
             print(tt[nrow(tt), 1:2, drop = FALSE])
             cat("-------------------------------------------------------------------------\n")
         }
+	if(object$dist != "np")
+	{
         if (object$dist == "weibull") {
             if (nrow(tt) > 3) {
                 cat("-------------------------------------------------------------------------\n")
                 cat("Regression Coefficients\n")
                 print(tt[-c(nrow(tt) - 0:2), , drop = FALSE])
+                cat("---\n")
+                cat("Signif. codes:  0 \"***\" 0.001 \"**\" 0.01 \"*\" 0.05 \".\" 0.1 \" \" 1\n")
+            }
+		}
+	if (object$dist == "exponential") {
+            if (nrow(tt) > 2) {
+                cat("-------------------------------------------------------------------------\n")
+                cat("Regression Coefficients\n")
+                print(tt[-c(nrow(tt) - 0:1), , drop = FALSE])
                 cat("---\n")
                 cat("Signif. codes:  0 \"***\" 0.001 \"**\" 0.01 \"*\" 0.05 \".\" 0.1 \" \" 1\n")
             }
@@ -125,11 +136,13 @@ summary.extrafrail=function (object, ...)
 	        }
             cat("-------------------------------------------------------------------------\n")
             cat("Parameters of baseline distribution\n")
-            print(tt[nrow(tt) - length(object$part):1, 1:2, drop = FALSE])
+	    ss=ifelse(object$dist=="pe",length(object$par),ifelse(object$dist=="exponential",1,2))
+            print(tt[nrow(tt) - ss:1, 1:2, drop = FALSE])
             cat("-------------------------------------------------------------------------\n")
             cat("Frailty variance\n")
             print(tt[nrow(tt), 1:2, drop = FALSE])
             cat("-------------------------------------------------------------------------\n")
+	}
 	}
     if (length(object$coefficients) == 1) {
         cat("-------------------------------------------------------------------------\n")

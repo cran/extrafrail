@@ -1,3 +1,8 @@
+### 1.5
+
+* option exp (exponential) was added in frailty.fit function as baseline model
+* fixed bugs in summary.extrafrail function for pe distribution as baseline model
+
 ### 1.4
 
 * option pe (piecewise exponential) was added in frailty.fit function as baseline model

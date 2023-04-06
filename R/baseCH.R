@@ -18,6 +18,11 @@ if(fit$dist=="weibull")
 lambda<-fit$coefficients[length(fit$coefficients)-2:1]
 ss=lambda[1]*t^lambda[2]
 }
+if(fit$dist=="exponential")
+{
+lambda<-fit$coefficients[length(fit$coefficients)-1]
+ss=lambda[1]*t
+}
 if(fit$dist=="pe")
 {
 lambda<-fit$coefficients[length(fit$coefficients)-length(fit$part):1]

@@ -26,8 +26,8 @@ the distribution assumed for the frailty. Supported values: gamma (GA also is va
 (weighted Lindley) and BS (Birnbaum-Saunders).
 }
   \item{dist}{
-the distribution assumed for the basal model. Supported values: weibull, pe (piecewise exponential)
-and np (non-parametric).
+the distribution assumed for the basal model. Supported values: weibull, pe (piecewise exponential),
+exponential and np (non-parametric).
 }
   \item{prec}{
 The convergence tolerance for parameters.  
@@ -40,7 +40,7 @@ partition time (only for piecewise exponential distribution).
 }
 }
 \details{
-For the weibull and piecewise exponential distributions as the basal model, the M1-step is performed 
+For the weibull, exponential and piecewise exponential distributions as the basal model, the M1-step is performed 
 using the optim function. For the non-parametric case, the M1-step is based on the coxph function 
 from the survival package.
 }

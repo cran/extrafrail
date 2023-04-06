@@ -43,7 +43,7 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
     if (!any(dist.frail == c("gamma", "GA", "IG", "WL", "BS"))) 
         stop("frailty distribution is not recognized")
     if(dist.frail=="gamma") dist.frail="GA"
-    if (!any(dist == c("np", "weibull", "pe"))) 
+    if (!any(dist == c("np", "weibull", "pe", "exponential"))) 
         stop("distribution for time-to-event is not recognized")
     if (length(t) != length(delta)) 
         stop("t and delta don't have the same length")
@@ -234,7 +234,9 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
             object.out$tau <- tau.GA(theta.last)
             object.out$logLik <- llike.obs
         }
-        if (dist == "pe") {
+        if (dist == "pe" | dist=="exponential") {
+		 dist.aux="pe"
+		if(dist=="exponential"){dist="pe"; part=0; dist.aux="exponential"}
             observed.llike.0.ga.dist <- function(eta, t, delta, 
                 ind, dist, part=NULL) {
                 lambda = eta[1:length(part)]
@@ -322,6 +324,7 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
                   ind = cluster, dist = dist, part=part)
                 para = c(lambda.new, theta.new)
                 names(para) = names(se) = c(paste("lambda",1:length(part),sep=""), "theta")
+                if(dist.aux=="exponential") names(para) = names(se) = c("lambda", "theta")
             }
             if (ncol(x) > 0) {
                 cox.aux = survreg(Surv(t, delta) ~ x, dist = "weibull")
@@ -361,6 +364,7 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
                   x = x, delta = delta, ind = cluster, dist = dist, part=part)
                 para = c(beta.last, lambda.last, theta.last)
                 names(para) = names(se) = c(colnames(x), paste("lambda",1:length(part),sep=""), "theta")
+		if(dist.aux=="exponential") names(para) = names(se) = c(colnames(x), "lambda", "theta")
             }
             object.out <- list(coefficients = para, se = se, 
                 z = z.new)
@@ -369,11 +373,11 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
             object.out$delta <- delta
             object.out$id <- cluster
             object.out$x <- x
-            object.out$dist <- dist
+            object.out$dist <- dist.aux
             object.out$dist.frail <- "GA"
             object.out$tau <- tau.GA(theta.last)
             object.out$logLik <- llike.obs
-		object.out$part <- part
+	    if(dist.aux=="pe") object.out$part <- part
         }
         if (dist == "np") {
             observed.llike.0.ga <- function(eta, t, delta, ind, 
@@ -687,7 +691,9 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
             object.out$tau <- tau.WL(theta.last)
             object.out$logLik <- llike.obs
         }
-        if (dist == "pe") {
+        if (dist == "pe" | dist=="exponential") {
+		 dist.aux="pe"
+		if(dist=="exponential"){dist="pe"; part=0; dist.aux="exponential"}
             observed.llike.0.dist <- function(eta, t, delta, 
                 ind, dist, part=NULL) {
                 lambda = eta[1:length(part)]
@@ -788,8 +794,8 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
 				theta.last), t = t, delta = delta, 
                   ind = cluster, dist = dist, part=part)
                 para = c(lambda.new, theta.new)
-                names(para) = names(se) = c(paste("lambda",1:length(part),sep=""), 
-                  "theta")
+                names(para) = names(se) = c(paste("lambda",1:length(part),sep=""),"theta")
+                if(dist.aux=="exponential") names(para) = names(se) = c("lambda","theta")
             }
             if (ncol(x) > 0) {
                 cox.aux = survreg(Surv(t, delta) ~ x, dist = "weibull")
@@ -834,8 +840,8 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
                   lambda.last, theta.last), t = t, 
                   x = x, delta = delta, ind = cluster, dist = dist, part=part)
                 para = c(beta.last, lambda.last, theta.last)
-                names(para) = names(se) = c(colnames(x),  
-                  paste("lambda",1:length(part),sep=""), "theta")
+                names(para) = names(se) = c(colnames(x), paste("lambda",1:length(part),sep=""), "theta")
+                if(dist.aux=="exponential") names(para) = names(se) = c(colnames(x), "lambda", "theta")
             }
             object.out <- list(coefficients = para, se = se, 
                 z = z.new)
@@ -844,11 +850,11 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
             object.out$delta <- delta
             object.out$id <- cluster
             object.out$x <- x
-            object.out$dist <- dist
+            object.out$dist <- dist.aux
             object.out$dist.frail <- "WL"
             object.out$tau <- tau.WL(theta.last)
             object.out$logLik <- llike.obs
-			object.out$part <- part
+	    if(dist.aux=="pe") object.out$part <- part
         }
         if (dist == "np") {
             observed.llike.0 <- function(eta, t, delta, ind, 
@@ -1162,7 +1168,9 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
             object.out$tau <- tau.IG(theta.last)
             object.out$logLik <- llike.obs
         }
-        if (dist == "pe") {
+        if (dist == "pe" | dist=="exponential") {
+		 dist.aux="pe"
+		if(dist=="exponential"){dist="pe"; part=0; dist.aux="exponential"}
             observed.llike.0.ig.dist <- function(eta, t, delta, 
                 ind, dist, part=NULL) {
                 lambda = eta[1:length(part)]
@@ -1260,8 +1268,8 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
 			theta.last), t = t, delta = delta, 
                   ind = cluster, dist = dist, part=part)
                 para = c(lambda.new, theta.new)
-                names(para) = names(se) = c(paste("lambda",1:length(part),sep=""), 
-                  "theta")
+                names(para) = names(se) = c(paste("lambda",1:length(part),sep=""), "theta")
+                if(dist.aux=="exponential") names(para) = names(se) = c("lambda", "theta")
             }
             if (ncol(x) > 0) {
                 cox.aux = survreg(Surv(t, delta) ~ x, dist = "weibull")
@@ -1306,8 +1314,8 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
                   lambda.last, theta.last), t = t, 
                   x = x, delta = delta, ind = cluster, dist = dist, part=part)
                 para = c(beta.last, lambda.last, theta.last)
-                names(para) = names(se) = c(colnames(x),  
-                  paste("lambda",1:length(part),sep=""), "theta")
+                names(para) = names(se) = c(colnames(x), paste("lambda",1:length(part),sep=""), "theta")
+                if(dist.aux=="exponential") names(para) = names(se) = c(colnames(x), "lambda", "theta")
             }
             object.out <- list(coefficients = para, se = se, 
                 z = z.new)
@@ -1316,11 +1324,11 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
             object.out$delta <- delta
             object.out$id <- cluster
             object.out$x <- x
-            object.out$dist <- dist
+            object.out$dist <- dist.aux
             object.out$dist.frail <- "IG"
             object.out$tau <- tau.IG(theta.last)
             object.out$logLik <- llike.obs
-			object.out$part <- part
+	    if(dist.aux=="pe") object.out$part <- part
         }
         if (dist == "np") {
             observed.llike.0.ig <- function(eta, t, delta, ind, 
@@ -1682,7 +1690,9 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
             object.out$tau <- tau.BS(theta.last)
             object.out$logLik <- llike.obs
         }
-        if (dist == "pe") {
+        if (dist == "pe" | dist=="exponential") {
+		dist.aux="pe"
+		if(dist=="exponential"){dist="pe"; part=0; dist.aux="exponential"}
             observed.llike.0.bs.dist <- function(eta, t, delta, 
                 ind, part=NULL) {
                 lambda = eta[1:length(part)]
@@ -1799,8 +1809,8 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
 				theta.last), t = t, delta = delta, 
                   ind = cluster, part=part)
                 para = c(lambda.new, theta.new)
-                names(para) = names(se) = c(paste("lambda",1:length(part),sep=""), 
-                  "theta")
+                names(para) = names(se) = c(paste("lambda",1:length(part),sep=""), "theta")
+                if(dist.aux=="exponential") names(para) = names(se) = c("lambda", "theta")
             }
             if (ncol(x) > 0) {
                 cox.aux = survreg(Surv(t, delta) ~ x, dist = "weibull")
@@ -1859,8 +1869,8 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
                   lambda.last, theta.last), t = t, 
                   x = x, delta = delta, ind = cluster, part=part)
                 para = c(beta.last, lambda.last, theta.last)
-                names(para) = names(se) = c(colnames(x),  
-                  paste("lambda",1:length(part),sep=""), "theta")
+                names(para) = names(se) = c(colnames(x), paste("lambda",1:length(part),sep=""), "theta")
+                if(dist.aux=="exponential") names(para) = names(se) = c(colnames(x), "lambda", "theta")
             }
             object.out <- list(coefficients = para, se = se, 
                 z = z.new)
@@ -1869,11 +1879,11 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
             object.out$delta <- delta
             object.out$id <- cluster
             object.out$x <- x
-            object.out$dist <- dist
+            object.out$dist <- dist.aux
             object.out$dist.frail <- "BS"
             object.out$tau <- tau.BS(theta.last)
             object.out$logLik <- llike.obs
-			object.out$part <- part
+	    if(dist.aux=="pe") object.out$part <- part
         }
         if (dist == "np") {
             observed.llike.0.bs <- function(eta, t, delta, ind, 
