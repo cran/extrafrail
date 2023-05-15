@@ -1,3 +1,7 @@
+### 1.6
+
+* fixed bugs in summary.extrafrail function to compute p-values
+
 ### 1.5
 
 * option exp (exponential) was added in frailty.fit function as baseline model

@@ -28,7 +28,7 @@ summary.extrafrail=function (object, ...)
         return(ast)
     }
     tt <- cbind(object$coefficients, object$se, exp(object$coefficients), 
-        object$coefficients/object$se, pnorm(abs(object$coefficients/object$se), 
+        object$coefficients/object$se, 2*pnorm(abs(object$coefficients/object$se), 
             lower.tail = FALSE))
     ast = sapply(tt[, 5], FUN = asterisk)
     tt = data.frame(round(tt, 5), ast)
