@@ -1,3 +1,7 @@
+### 1.7
+
+* option TN (truncated normal) was added in frailty.fit function
+
 ### 1.6
 
 * fixed bugs in summary.extrafrail function to compute p-values

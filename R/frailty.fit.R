@@ -40,7 +40,7 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
     cluster <- c(cluster)
     ind = cluster
     max.iter <- round(max.iter)
-    if (!any(dist.frail == c("gamma", "GA", "IG", "WL", "BS"))) 
+    if (!any(dist.frail == c("gamma", "GA", "IG", "WL", "BS","TN"))) 
         stop("frailty distribution is not recognized")
     if(dist.frail=="gamma") dist.frail="GA"
     if (!any(dist == c("np", "weibull", "pe", "exponential"))) 
@@ -2040,6 +2040,476 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
         }
         object.out
     }
+    frailtyTN <- function(formula, data, dist = "np", prec = 1e-04, 
+        max.iter = 1000, part=NULL) {
+	ratio<-function(x) exp(dnorm(x, log=TRUE)-pnorm(x, log.p=TRUE))
+        prof.TN <- function(nu, z, z2) {
+            ll = log1p(nu+ratio(nu)-1)-0.5*(z2*(nu+ratio(nu))^2-2*z*(nu+ratio(nu))*nu+nu^2)-pnorm(nu, log.p=TRUE)
+            -sum(ll)
+        }
+        fail.cluster <- function(delta, indice) {
+            sum.fail <- function(ind, delta) {
+                sum(delta[which(indice == ind)])
+            }
+            unlist(lapply(1:max(indice), sum.fail, delta = delta))
+        }
+	vari.tn <- function(nu){(nu+ratio(nu))^(-2)-ratio(nu)*(nu+ratio(nu))^(-1)}
+		C.k.aux<-function(x, k, ri, bi, nu){exp((ri+k)*log(x)-x*bi-x^2*0.5*(nu+ratio(nu))^2)}
+		C.k<-function(k, ri, bi, nu){integrate(C.k.aux, lower=0, upper=10, k=k, 
+			ri=ri, bi=bi, nu=nu, abs.tol=1e-15)$value}
+	dg <- function(x) {-2*(x+ratio(x))^(-3)*(1-ratio(x)*(x+ratio(x)))+ratio(x)+ratio(x)*(x+ratio(x))^(-2)*(1-ratio(x)*(x+ratio(x)))} #derivative of theta in relacion to nu
+        tau.TN.aux <- function(x, theta) {
+	eq.vari.tn=function(nu, theta){vari.tn(nu)-theta}
+	nu=uniroot(eq.vari.tn, lower=-20, upper=20, theta=theta, extendInt="yes")$root
+	b = nu+exp(dnorm(nu,log=TRUE)-pnorm(nu,log.p=TRUE))
+	L = exp(pnorm(nu-x/b,log.p=TRUE)-pnorm(nu,log.p=TRUE)+(x/b)*(-nu+x/(2*b)))
+	L2=L/b^2*((nu-x/b)*(exp(dnorm(nu-x/b,log=TRUE)-pnorm(nu-x/b,log.p=TRUE))+nu-x/b)+1)
+	pmax(0,x*L^2/b^2*((nu-x/b)*(exp(dnorm(nu-x/b,log=TRUE)-pnorm(nu-x/b,log.p=TRUE))+nu-x/b)+1))
+        }
+	L.deriv<-function(s, nu, n){
+	gamma=nu+ratio(nu);alpha=nu-s/gamma
+	L0=exp(pnorm(alpha,log.p=TRUE)-pnorm(nu,log.p=TRUE)+(s/gamma)*(0.5*s/gamma-nu))
+	L1=-(L0/gamma)*(alpha+ratio(alpha))
+	L2=(L0/gamma^2)*(alpha*(ratio(alpha)+alpha)+1)
+	if(n==0) L=L0
+	if(n==1) L=L1
+	if(n==2) L=L2
+	if(n>2){
+		L=c(L1,L2)
+		for(i in 3:n){
+			L[i]=(i-1)*L[i-2]/gamma^2-alpha*L[i-1]/gamma}
+		L=L[n]}
+	L}
+	tau.TN=function(theta) 4*integrate(tau.TN.aux,lower=0,upper=1000,theta=theta, stop.on.error = FALSE)$value-1
+        if (dist == "weibull") {
+	        observed.llike.0.tn.dist <- function(eta, t, delta, 
+                ind, dist, part=NULL) {
+                rho = eta[1]
+                lambda = eta[2]
+                nu = eta[3]
+                Lambda0 = H.base(t, lambda, rho, dist)
+                log.lambda0 = h.base(t, lambda, rho, dist)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0, ind) 
+                P1 = log((-1)^r*mapply(L.deriv, s=b, nu=nu, n=r))
+                P2 = delta * log.lambda0
+                -(sum(P1) + sum(P2))
+            }
+            observed.llike.tn.dist <- function(eta, t, delta, 
+                x, ind, dist, part=NULL) {
+                beta = eta[1:ncol(x)]
+                rho = eta[ncol(x) + 1]
+                lambda = eta[ncol(x) + 2]
+                nu = eta[ncol(x) + 3]
+                Lambda0 = H.base(t, lambda, rho, dist)
+                log.lambda0 = h.base(t, lambda, rho, dist)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0 * exp(x %*% beta), ind)
+                P1 = log((-1)^r*mapply(L.deriv, s=b, nu=nu, n=r))
+                P2 = delta * x %*% beta + delta * log.lambda0
+                -(sum(P1) + sum(P2))
+            }
+            observed.llike.tn.dist.Q1.0 <- function(eta, 
+                z, t, delta, x, ind, dist, part=NULL) {
+                  rho = exp(eta[1])
+                  lambda = exp(eta[2])
+                Lambda0 = H.base(t, lambda, rho, dist)
+                log.lambda0 = h.base(t, lambda, rho, dist)
+                P1 = delta * log.lambda0 - z[ind] * Lambda0
+                -sum(P1)
+            }
+            observed.llike.tn.dist.Q1 <- function(eta, 
+                z, t, delta, x, ind, dist, part=NULL) {
+                beta = eta[1:ncol(x)]
+                  rho = exp(eta[ncol(x) + 1])
+                  lambda = exp(eta[ncol(x) + 2])
+                Lambda0 = H.base(t, lambda, rho, dist)
+                log.lambda0 = h.base(t, lambda, rho, dist)
+                P1 = delta * x %*% beta + delta * log.lambda0 - 
+                  z[ind] * Lambda0 * exp(x %*% beta)
+                -sum(P1)
+            }
+            m = length(t)
+            nu.last = 2
+		theta.last = vari.tn(nu.last)
+            z.last = rep(1, m)
+            z2.last = rep(1, m)
+            r = fail.cluster(delta, cluster)
+            dif = 10
+            i = 1
+            rho.last = 1
+            lambda.last = 1
+            if (ncol(x) == 0) {
+                while (i <= max.iter & dif > prec) {
+                  Lambda0.last = H.base(t, lambda.last, rho.last, 
+                    dist)
+                  b.aux = fail.cluster(Lambda0.last, cluster) - nu.last*(nu.last+ratio(nu.last))
+			C0=mapply(C.k, k=0, ri=r, bi=b.aux, nu=nu.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=b.aux, nu=nu.last)
+                  C2=mapply(C.k, k=2, ri=r, bi=b.aux, nu=nu.last)
+                  z.new = C1/C0
+			z2.new = C2/C0
+                  aux.1 = optim(c(log(rho.last), log(lambda.last)), 
+                    observed.llike.tn.dist.Q1.0, method = "BFGS", 
+                    z = z.new, t = t, delta = delta, 
+                    x = x, ind = ind, dist = dist)
+                    rho.new = exp(aux.1$par[1])
+                    lambda.new = exp(aux.1$par[2])
+                  nu.new = optim(nu.last, prof.TN, z = z.new, z2 = z2.new,
+                    method = "Brent", lower = max(-40,nu.last-3), upper = min(40,nu.last+3))$par
+			theta.new = vari.tn(nu.new) 
+                 dif = max(abs(c(rho.last, lambda.last, theta.last) - 
+                    c(rho.new, lambda.new, theta.new)))
+                  theta.last = theta.new
+                  rho.last = rho.new
+                  lambda.last = lambda.new
+                  nu.last = nu.new
+                  z.last = z.new
+                  z2.last = z2.new
+                  i = i + 1
+                }
+                aux.se = hessian(observed.llike.0.tn.dist, x0 = c(rho.last, 
+                  lambda.last, nu.last), t = t, delta = delta, 
+                  ind = cluster, dist = dist)
+                se = sqrt(diag(solve(aux.se)))
+        		se[length(se)] = se[length(se)] * abs(dg(nu.last))
+		   llike.obs = -observed.llike.0.tn.dist(c(rho.last, 
+                  lambda.last, nu.last), t = t, delta = delta, 
+                  ind = cluster, dist = dist)
+                para = c(rho.new, lambda.new, theta.new)
+                names(para) = names(se) = c("rho", "lambda", 
+                  "theta")
+            }
+            if (ncol(x) > 0) {
+                cox.aux = survreg(Surv(t, delta) ~ x, dist = "weibull")
+                beta.last = -coef(cox.aux)[-1]/cox.aux$scale
+                lambda.last = exp(-coef(cox.aux)[1]/cox.aux$scale)
+                rho.last = 1/cox.aux$scale
+                while (i <= max.iter & dif > prec) {
+                  Lambda0.last = H.base(t, lambda.last, rho.last, 
+                    dist)
+                  b.aux = fail.cluster(Lambda0.last*exp(x%*%beta.last), cluster) - nu.last*(nu.last+ratio(nu.last))
+			C0=mapply(C.k, k=0, ri=r, bi=b.aux, nu=nu.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=b.aux, nu=nu.last)
+                  C2=mapply(C.k, k=2, ri=r, bi=b.aux, nu=nu.last)
+                  z.new = C1/C0
+			z2.new = C2/C0
+                  aux.1 = optim(c(beta.last, log(rho.last), log(lambda.last)), 
+                    observed.llike.tn.dist.Q1, method = "BFGS", 
+                    z = z.new, t = t, delta = delta, 
+                    x = x, ind = ind, dist = dist)
+                  beta.new = aux.1$par[1:ncol(x)]
+                    rho.new = exp(aux.1$par[ncol(x) + 1])
+                    lambda.new = exp(aux.1$par[ncol(x) + 2])
+                  nu.new = optim(nu.last, prof.TN, z = z.new, 
+                    z2 = z2.new, method = "Brent", lower = -40, 
+                    upper = 40)$par
+			theta.new = vari.tn(nu.new)
+                  dif = max(abs(c(beta.last, rho.last, lambda.last, 
+                    theta.last) - c(beta.new, rho.new, lambda.new, 
+                    theta.new)))
+                  beta.last = beta.new
+                  theta.last = theta.new
+                  rho.last = rho.new
+                  lambda.last = lambda.new
+			nu.last = nu.new
+                  z.last = z.new
+                  z2.last = z2.new
+                  i = i + 1
+                }
+                aux.se = hessian(observed.llike.tn.dist, x0 = c(beta.last, 
+                  rho.last, lambda.last, nu.last), t = t, 
+                  x = x, delta = delta, ind = cluster, dist = dist)
+                se = sqrt(diag(solve(aux.se)))
+			se[length(se)] = se[length(se)] * abs(dg(nu.last))
+                llike.obs = -observed.llike.tn.dist(c(beta.last, 
+                  rho.last, lambda.last, nu.last), t = t, 
+                  x = x, delta = delta, ind = cluster, dist = dist)
+                para = c(beta.new, rho.new, lambda.new, theta.new)
+                names(para) = names(se) = c(colnames(x), "rho", 
+                  "lambda", "theta")
+            }
+            object.out <- list(coefficients = para, se = se, 
+                z = z.new, z2=z2.new)
+            class(object.out) <- "extrafrail"
+            object.out$t <- t
+            object.out$delta <- delta
+            object.out$id <- cluster
+            object.out$x <- x
+            object.out$dist <- dist
+            object.out$dist.frail <- "TN"
+            object.out$tau <- tau.TN(theta.last)
+            object.out$logLik <- llike.obs
+        }
+	if (dist == "pe" | dist=="exponential") {
+		 dist.aux="pe"
+		if(dist=="exponential"){dist="pe"; part=0; dist.aux="exponential"}
+            observed.llike.0.tn.dist <- function(eta, t, delta, 
+                ind, dist, part=NULL) {
+                lambda = eta[1:length(part)]
+                nu = eta[length(part)+1]
+                Lambda0 = H.base(t, lambda=lambda, dist=dist, part=part)
+                log.lambda0 = h.base(t, lambda=lambda, dist=dist, part=part)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0, ind)
+                P1 = log((-1)^r*mapply(L.deriv, s=b, nu=nu, n=r))
+                P2 = delta * log.lambda0
+                -(sum(P1) + sum(P2))
+            }
+            observed.llike.tn.dist <- function(eta, t, delta, 
+                x, ind, dist, part=NULL) {
+                beta = eta[1:ncol(x)]
+                lambda = eta[ncol(x)+1:length(part)]
+                nu = eta[ncol(x) + length(part) + 1]
+                Lambda0 = H.base(t, lambda=lambda, dist=dist, part=part)
+                log.lambda0 = h.base(t, lambda=lambda, dist=dist, part=part)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0 * exp(x %*% beta), ind)
+                P1 = log((-1)^r*mapply(L.deriv, s=b, nu=nu, n=r))
+                P2 = delta * x %*% beta + delta * log.lambda0
+                -(sum(P1) + sum(P2))
+            }
+            observed.llike.tn.dist.Q1.0 <- function(eta, 
+                z, t, delta, x, ind, dist, part=NULL) {
+                  lambda = exp(eta[1:length(part)])
+                Lambda0 = H.base(t, lambda=lambda, dist=dist, part=part)
+                log.lambda0 = h.base(t, lambda=lambda, dist=dist, part=part)
+                P1 = delta * log.lambda0 - z[ind] * Lambda0
+                -sum(P1)
+            }
+            observed.llike.tn.dist.Q1 <- function(eta, 
+                z, t, delta, x, ind, dist, part=NULL) {
+                beta = eta[1:ncol(x)]
+                  lambda = exp(eta[ncol(x)+1:length(part)])
+                Lambda0 = H.base(t, lambda=lambda, dist=dist, part=part)
+                log.lambda0 = h.base(t, lambda=lambda, dist=dist, part=part)
+                P1 = delta * x %*% beta + delta * log.lambda0 - 
+                  z[ind] * Lambda0 * exp(x %*% beta)
+                -sum(P1)
+            }
+            m = length(t)
+		nu.last=2
+            theta.last = vari.tn(nu.last)
+            z.last = rep(1, m)
+            z2.last = rep(1, m)
+            r = fail.cluster(delta, cluster)
+            dif = 10
+            i = 1
+            lambda.last = rep(1/mean(t), length(part))
+            if (ncol(x) == 0) {
+                while (i <= max.iter & dif > prec) {
+                  Lambda0.last = H.base(t, lambda=lambda.last, dist=dist, part=part)
+                  b.aux = fail.cluster(Lambda0.last, cluster) - nu.last*(nu.last+ratio(nu.last))
+			C0=mapply(C.k, k=0, ri=r, bi=b.aux, nu=nu.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=b.aux, nu=nu.last)
+                  C2=mapply(C.k, k=2, ri=r, bi=b.aux, nu=nu.last)
+                  z.new = C1/C0
+			z2.new = C2/C0
+                  aux.1 = optim(log(lambda.last), 
+                    observed.llike.tn.dist.Q1.0, method = "BFGS", 
+                    z = z.new, t = t, delta = delta, 
+                    x = x, ind = ind, dist = dist, part=part)
+                    lambda.new = exp(aux.1$par)
+                  nu.new = optim(nu.last, prof.TN, z = z.new, 
+                    z2 = z2.new, method = "Brent", lower = -40, 
+                    upper = 40)$par
+			theta.new = vari.tn(nu.new)
+                  dif = max(abs(c(lambda.last, theta.last) - 
+                    c(lambda.new, theta.new)))
+                  theta.last = theta.new
+                  lambda.last = lambda.new
+			nu.last = nu.new
+                  z.last = z.new
+                  z2.last = z2.new
+                  i = i + 1
+                }
+            	aux.se = hessian(observed.llike.0.tn.dist, x0 = c(lambda.last, 
+		nu.last), t = t, delta = delta, 
+             ind = cluster, dist = dist, part=part)
+                se = sqrt(diag(solve(aux.se)))
+                llike.obs = -observed.llike.0.tn.dist(c(lambda.last, nu.last), t = t, delta = delta, 
+                  ind = cluster, dist = dist, part=part)
+                se=abs(c(lambda.last, theta.last))
+			se[length(se)] = se[length(se)] * abs(dg(nu.last))
+		    llike.obs = lambda.last
+                para = c(lambda.new, theta.new)
+                names(para) = names(se) = c(paste("lambda",1:length(part),sep=""), "theta")
+                if(dist.aux=="exponential") names(para) = names(se) = c("lambda", "theta")
+            }
+            if (ncol(x) > 0) {
+                cox.aux = survreg(Surv(t, delta) ~ x, dist = "weibull")
+                beta.last = -coef(cox.aux)[-1]/cox.aux$scale
+                lambda.last = rep(exp(-coef(cox.aux)[1]/cox.aux$scale), length(part))
+                while (i <= max.iter & dif > prec) {
+                  Lambda0.last = H.base(t, lambda=lambda.last, dist=dist, part=part)
+                  b.aux = fail.cluster(Lambda0.last*exp(x%*%beta.last), cluster) - nu.last*(nu.last+ratio(nu.last))
+			C0=mapply(C.k, k=0, ri=r, bi=b.aux, nu=nu.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=b.aux, nu=nu.last)
+                  C2=mapply(C.k, k=2, ri=r, bi=b.aux, nu=nu.last)
+                  z.new = C1/C0
+			z2.new = C2/C0
+                  aux.1 = optim(c(beta.last, log(lambda.last)), 
+                    observed.llike.tn.dist.Q1, method = "BFGS", 
+                    z = z.new, t = t, delta = delta, 
+                    x = x, ind = ind, dist = dist, part=part)
+                  beta.new = aux.1$par[1:ncol(x)]
+                    lambda.new = exp(aux.1$par[ncol(x) + 1:length(part)])
+                  nu.new = optim(nu.last, prof.TN, z = z.new, 
+                    z2 = z2.new, method = "Brent", lower = -40, 
+                    upper = 40)$par
+			theta.new=vari.tn(nu.new)
+                  dif = max(abs(c(beta.last, lambda.last, 
+                    theta.last) - c(beta.new, lambda.new, 
+                    theta.new)))
+                  beta.last = beta.new
+                  theta.last = theta.new
+                  lambda.last = lambda.new
+			nu.last=nu.new
+                  z.last = z.new
+                  z2.last = z2.new
+                  i = i + 1
+                }
+                aux.se = hessian(observed.llike.tn.dist, x0 = c(beta.last, 
+                  lambda.last, nu.last), t = t, 
+                  x = x, delta = delta, ind = cluster, dist = dist, part=part)
+                se = sqrt(diag(solve(aux.se)))
+			se[length(se)] = se[length(se)] * abs(dg(nu.last))
+                llike.obs = -observed.llike.tn.dist(c(beta.last, 
+                  lambda.last, nu.last), t = t, 
+                  x = x, delta = delta, ind = cluster, dist = dist, part=part)
+			para = c(beta.last, lambda.last, theta.last)
+                names(para) = names(se) = c(colnames(x), paste("lambda",1:length(part),sep=""), "theta")
+		if(dist.aux=="exponential") names(para) = names(se) = c(colnames(x), "lambda", "theta")
+            }
+            object.out <- list(coefficients = para, se = se, 
+                z = z.new, z2=z2.new)
+            class(object.out) <- "extrafrail"
+            object.out$t <- t
+            object.out$delta <- delta
+            object.out$id <- cluster
+            object.out$x <- x
+            object.out$dist <- dist.aux
+            object.out$dist.frail <- "TN"
+            object.out$tau <- tau.TN(theta.last)
+            object.out$logLik <- llike.obs
+	    if(dist.aux=="pe") object.out$part <- part
+        }
+	if (dist == "np") {
+            observed.llike.0.tn <- function(eta, t, delta, ind, 
+                cox.aux) {
+                nu = eta
+                Lambda0 = cumhazard.basal(t, cox.aux)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0, ind)
+                P1 = log((-1)^r*mapply(L.deriv, s=b, nu=nu, n=r))
+                -sum(P1)
+            }
+            observed.llike.tn <- function(eta, t, delta, x, ind, 
+                cox.aux) {
+                nu = eta[length(eta)]
+                beta = eta[-length(eta)]
+                Lambda0 = cumhazard.basal(t, cox.aux)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0 * exp(x %*% beta), ind)
+                P1 = log((-1)^r*mapply(L.deriv, s=b, nu=nu, n=r))
+                P2 = delta * x %*% beta
+                -(sum(P1) + sum(P2))
+            }
+            cumhazard.basal <- function(t, coxph.object) {
+                ind.min <- function(t0, time) {
+                  min(which(time >= t0))
+                }
+                bb = basehaz(coxph.object)
+                tt = bb$time
+                bb$hazard[unlist(lapply(t, ind.min, time = tt))]
+            }
+            m = length(t)
+		nu.last=2
+            theta.last = vari.tn(nu.last)
+            z.last = rep(1, m)
+            z2.last = rep(1, m)
+            r = fail.cluster(delta, cluster)
+            dif = 10
+            i = 1
+            if (ncol(x) == 0) {
+                while (i <= max.iter & dif > prec) {
+                  cox.aux = coxph(Surv(t, delta) ~ offset(log(z.last[cluster])))
+                  Lambda0.new = cumhazard.basal(t, cox.aux)
+                  b.aux = fail.cluster(Lambda0.new, cluster) - nu.last*(nu.last+ratio(nu.last))
+			C0=mapply(C.k, k=0, ri=r, bi=b.aux, nu=nu.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=b.aux, nu=nu.last)
+                  C2=mapply(C.k, k=2, ri=r, bi=b.aux, nu=nu.last)
+                  z.new = C1/C0
+			z2.new = C2/C0
+                  nu.new = optim(nu.last, prof.TN, z = z.new, 
+                    z2 = z2.new, method = "Brent", lower = -40, 
+                    upper = 40)$par
+			theta.new=vari.tn(nu.new)
+                  dif = max(abs(theta.last - theta.new))
+                  theta.last = theta.new
+			nu.last = nu.new
+                  z.last = z.new
+                  z2.last = z2.new
+                  i = i + 1
+                }
+                aux.se = hessian(observed.llike.0.tn, x0 = c(nu.last), 
+                  t = t, delta = delta, ind = cluster, cox.aux = cox.aux)
+                se = sqrt(diag(solve(aux.se)))
+			se[length(se)] = se[length(se)] * abs(dg(nu.last))
+			para = c(theta.new)
+                names(para) = names(se) = c("theta")
+            }
+            if (ncol(x) > 0) {
+                cox.aux = coxph(Surv(t, delta) ~ x)
+                beta.last = coef(cox.aux)
+                while (i <= max.iter & dif > prec) {
+                  cox.aux = coxph(Surv(t, delta) ~ x + offset(log(z.last[cluster])))
+                  beta.new = coef(cox.aux)
+                  Lambda0.new = cumhazard.basal(t, cox.aux)
+                  b.aux = fail.cluster(Lambda0.new*exp(x%*%beta.last), cluster) - nu.last*(nu.last+ratio(nu.last))
+			C0=mapply(C.k, k=0, ri=r, bi=b.aux, nu=nu.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=b.aux, nu=nu.last)
+                  C2=mapply(C.k, k=2, ri=r, bi=b.aux, nu=nu.last)
+                  z.new = C1/C0
+			z2.new = C2/C0
+                  nu.new = optim(nu.last, prof.TN, z = z.new, 
+                    z2 = z2.new, method = "Brent", lower = -40, 
+                    upper = 40)$par
+			theta.new = vari.tn(nu.new)
+                  dif = max(abs(c(beta.last, theta.last) - c(beta.new, 
+                    theta.new)))
+                  beta.last = beta.new
+                  theta.last = theta.new
+			nu.last=nu.new
+                  z.last = z.new
+                  z2.last = z2.new
+                  i = i + 1
+                }
+                aux.se = hessian(observed.llike.tn, x0 = c(beta.last, 
+                  nu.last), t = t, delta = delta, x = x, ind = cluster, 
+                  cox.aux = cox.aux)
+                se = sqrt(diag(solve(aux.se)))
+			se[length(se)] = se[length(se)] * abs(dg(nu.last))
+			para = c(beta.new, theta.new)
+                names(para) = names(se) = c(colnames(x), "theta")
+            }
+            bb = basehaz(cox.aux)
+            Lambda0 = cbind(bb$time, bb$hazard)
+            colnames(Lambda0) = c("time", "hazard")
+            object.out <- list(coefficients = para, se = se, 
+                z = z.new, z2=z2.new)
+            class(object.out) <- "extrafrail"
+            object.out$t <- t
+            object.out$delta <- delta
+            object.out$id <- cluster
+            object.out$Lambda0 <- Lambda0
+            object.out$x <- x
+            object.out$dist <- dist
+            object.out$dist.frail <- "TN"
+            object.out$tau <- tau.TN(theta.last)
+        }
+        object.out
+    }
     if (dist.frail == "GA") 
         val <- frailtyGA(formula, data, dist = dist, prec = prec, 
             max.iter = max.iter, part=part)
@@ -2052,5 +2522,15 @@ frailty.fit <- function (formula, data, dist.frail = "gamma", dist = "np", prec 
     if (dist.frail == "BS") 
         val <- frailtyBS(formula, data, dist = dist, prec = prec, 
             max.iter = max.iter, part=part)
+    if (dist.frail == "TN") 
+        val <- frailtyTN(formula, data, dist = dist, prec = prec, 
+            max.iter = max.iter, part=part)
     val
 }
+
+
+
+
+
+
+

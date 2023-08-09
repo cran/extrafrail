@@ -23,7 +23,7 @@ A data.frame in which the formula argument can be evaluated
 }
   \item{dist.frail}{
 the distribution assumed for the frailty. Supported values: gamma (GA also is valid), IG (inverse gaussian), WL
-(weighted Lindley) and BS (Birnbaum-Saunders).
+(weighted Lindley), BS (Birnbaum-Saunders) and TN (truncated normal).
 }
   \item{dist}{
 the distribution assumed for the basal model. Supported values: weibull, pe (piecewise exponential),
