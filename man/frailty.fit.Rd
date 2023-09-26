@@ -23,7 +23,7 @@ A data.frame in which the formula argument can be evaluated
 }
   \item{dist.frail}{
 the distribution assumed for the frailty. Supported values: gamma (GA also is valid), IG (inverse gaussian), WL
-(weighted Lindley), BS (Birnbaum-Saunders) and TN (truncated normal).
+(weighted Lindley) and BS (Birnbaum-Saunders).
 }
   \item{dist}{
 the distribution assumed for the basal model. Supported values: weibull, pe (piecewise exponential),
@@ -71,15 +71,15 @@ Diego Gallardo and Marcelo Bourguignon.
 \examples{
 \donttest{
 require(survival)
-#require(frailtypack)
-data(readmission, package="frailtypack")
+#require(frailtyHL)
+data(rats, package="frailtyHL")
 #Fit for WL frailty model
-fit.WL <- frailty.fit(survival::Surv(time, event) ~ dukes + survival::cluster(id), 
-dist.frail="WL", data = readmission)
+fit.WL <- frailty.fit(survival::Surv(time, status)~ rx+ survival::cluster(litter), 
+dist.frail="WL", data = rats)
 summary(fit.WL)
 #Fit for gamma frailty model
-fit.GA <- frailty.fit(survival::Surv(time, event) ~ dukes + survival::cluster(id), 
-dist.frail="gamma", data = readmission)
+fit.GA <- frailty.fit(survival::Surv(time, status) ~ rx + survival::cluster(litter), 
+dist.frail="gamma", data = rats)
 summary(fit.GA)
 }
 }

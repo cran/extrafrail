@@ -184,4 +184,4 @@ summary.extrafrail <- function (object, ...)
     cat(paste("Kendall's tau:", round(object$tau, 4)))
     cat("\n---\n")
 }
-   
+    

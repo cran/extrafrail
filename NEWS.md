@@ -1,3 +1,7 @@
+### 1.8
+
+* removed dependency of frailtypack package
+
 ### 1.7
 
 * option TN (truncated normal) was added in frailty.fit function

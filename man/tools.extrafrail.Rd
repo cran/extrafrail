@@ -35,11 +35,11 @@ Gallardo and Bourguignon (2022).
 Diego Gallardo and Marcelo Bourguignon.}
 \examples{
 \donttest{
-#require(frailtypack)
+#require(frailtyHL)
 require(survival)
-data(readmission, package="frailtypack")
-fit <- frailty.fit(survival::Surv(time, event) ~ dukes + survival::cluster(id), 
-dist.frail="WL", data = readmission)
+data(rats, package="frailtyHL")
+fit <- frailty.fit(survival::Surv(time, status) ~ rx + survival::cluster(litter), 
+dist.frail="WL", data = rats)
 summary(fit)
 }
 }
