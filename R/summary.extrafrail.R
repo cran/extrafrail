@@ -123,6 +123,40 @@ summary.extrafrail <- function (object, ...)
                   ifelse(object$dist == "pe", "piecewise exponential", 
                     object$dist)), " survival function\n", sep = "")
     }
+    if (object$dist.frail == "TN") {
+        if (uni) 
+            cat("Univariate truncated normal frailty model with\n", 
+                ifelse(object$dist == "np", "non-parametric", 
+                  ifelse(object$dist == "pe", "piecewise exponential", 
+                    object$dist)), " survival function\n", sep = "")
+        if (bi) 
+            cat("Bivariate truncated normal frailty model with\n", 
+                ifelse(object$dist == "np", "non-parametric", 
+                  ifelse(object$dist == "pe", "piecewise exponential", 
+                    object$dist)), " survival function\n", sep = "")
+        if (!uni & !bi) 
+            cat("Multivariate truncated normal frailty model with\n", 
+                ifelse(object$dist == "np", "non-parametric", 
+                  ifelse(object$dist == "pe", "piecewise exponential", 
+                    object$dist)), " survival function\n", sep = "")
+    }
+    if (object$dist.frail == "MIG") {
+        if (uni) 
+            cat("Univariate mixture of inverse Gaussian frailty model with\n", 
+                ifelse(object$dist == "np", "non-parametric", 
+                  ifelse(object$dist == "pe", "piecewise exponential", 
+                    object$dist)), " survival function\n", sep = "")
+        if (bi) 
+            cat("Bivariate mixture of inverse Gaussian frailty model with\n", 
+                ifelse(object$dist == "np", "non-parametric", 
+                  ifelse(object$dist == "pe", "piecewise exponential", 
+                    object$dist)), " survival function\n", sep = "")
+        if (!uni & !bi) 
+            cat("Multivariate mixture of inverse Gaussian frailty model with\n", 
+                ifelse(object$dist == "np", "non-parametric", 
+                  ifelse(object$dist == "pe", "piecewise exponential", 
+                    object$dist)), " survival function\n", sep = "")
+    }
     if (length(object$coefficients) > 1) {
         if (object$dist == "np") {
             cat("-------------------------------------------------------------------------\n")

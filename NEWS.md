@@ -1,3 +1,7 @@
+### 1.9
+
+* option MIG (mixture of inverse gaussian) was added in frailty.fit function
+
 ### 1.8
 
 * removed dependency of frailtypack package
