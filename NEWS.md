@@ -1,3 +1,7 @@
+### 1.10
+
+* corrected the variance of frailty for the MIG model and its estimated standard error
+
 ### 1.9
 
 * option MIG (mixture of inverse gaussian) was added in frailty.fit function

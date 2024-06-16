@@ -2696,8 +2696,7 @@ frailty.fit<- function (formula, data, dist.frail = "gamma", dist = "np", prec =
     }
 frailtyMIG <- function(formula, data, dist = "np", prec = 1e-04, 
         max.iter = 1000, part = NULL) {
-	Var_U <- function(m) {
-	 (1+m)^3*(1-m)^2/m^2+m^2-m^3}
+	Var_U <- function(m) {m^3*(1-m)+(1-m^2)^3/m^2}
         prof.MIG <- function(m, u1, y, a.0, a.1, b, p, nu.aux) {            
 		kappa = (1-nu.aux)*m^(-2)*sqrt(b)*besselK(sqrt(a.0*b), nu=p+1)/(sqrt(a.0)*besselK(sqrt(a.0*b), nu=p))+nu.aux*(m+1)^(-2)*sqrt(b)*besselK(sqrt(a.1*b), nu=p+1)/(sqrt(a.1)*besselK(sqrt(a.1*b), nu=p))
 		kappa1 = (m+1)^(-1)*nu.aux+m^(-1)*(1-nu.aux)
@@ -2834,7 +2833,7 @@ frailtyMIG <- function(formula, data, dist = "np", prec = 1e-04,
                   lambda.last, m.last), t = t, delta = delta, 
                   ind = cluster)
                 para = c(rho.new, lambda.new, Var_U(m.new))
-			se[length(se)] = se[length(se)]*abs((4*m.new^4-2*m.new^3-m.new-2)/m.new^3)
+			se[length(se)] = se[length(se)]*abs((8*m.new^6-3*m.new^5-6*m.new^4+2)/m.new^3)
                 names(para) = names(se) = c("rho", "lambda", 
                   "theta")
             }
@@ -2883,7 +2882,7 @@ frailtyMIG <- function(formula, data, dist = "np", prec = 1e-04,
                   rho.last, lambda.last, m.last), t = t, 
                   x = x, delta = delta, ind = cluster)
                 se = sqrt(diag(solve(aux.se)))
-			se[length(se)] = se[length(se)]*abs((4*m.new^4-2*m.new^3-m.new-2)/m.new^3)
+			se[length(se)] = se[length(se)]*abs((8*m.new^6-3*m.new^5-6*m.new^4+2)/m.new^3)
                 llike.obs = -observed.llike.mig.dist(c(beta.last, 
                   rho.last, lambda.last, m.last), t = t, 
                   x = x, delta = delta, ind = cluster)
@@ -3018,7 +3017,7 @@ frailtyMIG <- function(formula, data, dist = "np", prec = 1e-04,
                   m.last), t = t, delta = delta, ind = cluster, 
                   part = part)
                 se = sqrt(diag(solve(aux.se)))
-			se[length(se)] = se[length(se)]*abs((4*m.new^4-2*m.new^3-m.new-2)/m.new^3)
+			se[length(se)] = se[length(se)]*abs((8*m.new^6-3*m.new^5-6*m.new^4+2)/m.new^3)
                  llike.obs = -observed.llike.0.mig.dist(c(lambda.last, 
                   m.last), t = t, delta = delta, ind = cluster, 
                   part = part)
@@ -3071,7 +3070,7 @@ frailtyMIG <- function(formula, data, dist = "np", prec = 1e-04,
                   lambda.last, m.last), t = t, x = x, delta = delta, 
                   ind = cluster, part = part)
                 se = sqrt(diag(solve(aux.se)))
-			se[length(se)] = se[length(se)]*abs((4*m.new^4-2*m.new^3-m.new-2)/m.new^3)
+			se[length(se)] = se[length(se)]*abs((8*m.new^6-3*m.new^5-6*m.new^4+2)/m.new^3)
                 llike.obs = -observed.llike.mig.dist(c(beta.last, 
                   lambda.last, m.last), t = t, x = x, delta = delta, 
                   ind = cluster, part = part)
@@ -3172,7 +3171,7 @@ frailtyMIG <- function(formula, data, dist = "np", prec = 1e-04,
                 aux.se = hessian(observed.llike.0.mig, x0 = c(m.last), 
                   t = t, delta = delta, ind = cluster, cox.aux = cox.aux)
                 se = sqrt(diag(solve(aux.se)))
-			se[length(se)] = se[length(se)]*abs((4*m.new^4-2*m.new^3-m.new-2)/m.new^3)
+			se[length(se)] = se[length(se)]*abs((8*m.new^6-3*m.new^5-6*m.new^4+2)/m.new^3)
                 para = c(Var_U(m.new))
                 names(para) = names(se) = c("theta")
             }
@@ -3209,7 +3208,7 @@ frailtyMIG <- function(formula, data, dist = "np", prec = 1e-04,
                   m.last), t = t, delta = delta, x = x, ind = cluster, 
                   cox.aux = cox.aux)
                 se = sqrt(diag(solve(aux.se)))
-			se[length(se)] = se[length(se)]*abs((4*m.new^4-2*m.new^3-m.new-2)/m.new^3)
+			se[length(se)] = se[length(se)]*abs((8*m.new^6-3*m.new^5-6*m.new^4+2)/m.new^3)
                 para = c(beta.new, Var_U(m.new))
                 names(para) = names(se) = c(colnames(x), "theta")
             }

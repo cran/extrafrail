@@ -87,6 +87,23 @@ print.extrafrail<-function (x, digits = max(3L, getOption("digits") - 3L), ...)
                   "pe", "piecewise exponential", x$dist)), " survival function\n", 
                 sep = "")
     }
+    if (x$dist.frail == "MIG") {
+        if (uni) 
+            cat("Univariate mixture of inverse Gaussian frailty model with\n", 
+                ifelse(x$dist == "np", "non-parametric", ifelse(x$dist == 
+                  "pe", "piecewise exponential", x$dist)), " survival function\n", 
+                sep = "")
+        if (bi) 
+            cat("Bivariate mixture of inverse Gaussian frailty model with\n", 
+                ifelse(x$dist == "np", "non-parametric", ifelse(x$dist == 
+                  "pe", "piecewise exponential", x$dist)), " survival function\n", 
+                sep = "")
+        if (!uni & !bi) 
+            cat("Multivariate mixture of inverse Gaussian frailty model with\n", 
+                ifelse(x$dist == "np", "non-parametric", ifelse(x$dist == 
+                  "pe", "piecewise exponential", x$dist)), " survival function\n", 
+                sep = "")
+    }
     cat("\n")
     cat("Coefficients:\n")
     print.default(format(x$coefficients, digits = digits), print.gap = 2L, 
