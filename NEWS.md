@@ -1,3 +1,8 @@
+### 1.11
+
+* corrected the observed log-likelihood function for the MIG model
+* option MBS (mixture of Birnbaum-Saunders) was added in frailty.fit function
+
 ### 1.10
 
 * corrected the variance of frailty for the MIG model and its estimated standard error

@@ -6,8 +6,8 @@ Fitted different shared frailty models
 }
 \description{
 frailty.fit computes the maximum likelihood estimates based on the EM algorithm for the
-shared gamma, inverse gaussian, weighted Lindley, Birnbaum-Saunders, truncated normal
-and mixture of inverse gaussian frailty models. 
+shared gamma, inverse gaussian, weighted Lindley, Birnbaum-Saunders, truncated normal,
+mixture of inverse gaussian and mixture of Birbaum-Saunders frailty models. 
 }
 \usage{
 frailty.fit(formula, data, dist.frail="gamma", dist = "np", prec = 1e-04, 
@@ -24,7 +24,7 @@ A data.frame in which the formula argument can be evaluated
 }
   \item{dist.frail}{
 the distribution assumed for the frailty. Supported values: gamma (GA also is valid), IG (inverse gaussian), WL
-(weighted Lindley), BS (Birnbaum-Saunders), TN (truncated normal) and MIG (mixture of IG).
+(weighted Lindley), BS (Birnbaum-Saunders), TN (truncated normal), MIG (mixture of IG) and MBS (mixture of BS).
 }
   \item{dist}{
 the distribution assumed for the basal model. Supported values: weibull, pe (piecewise exponential),
@@ -65,6 +65,9 @@ option is specified for the basal distribution)}
 \references{
 Gallardo, D.I., Bourguignon, M. (2022) The shared weighted Lindley frailty model for
 cluster failure time data. Submitted.
+
+Gallardo, D.I., Bourguignon, M., Romeo, J. (2024) Birnbaum-Saunders frailty regression 
+models for clustered survival data. Statistics and Computing, 34, 141.
 }
 \author{
 Diego Gallardo and Marcelo Bourguignon.

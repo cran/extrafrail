@@ -24,6 +24,10 @@ Supported frailty models are:
 - gamma frailty model
 - inverse gaussian frailty model
 - weighted frailty model 
+- Birnbaum-Saunders frailty model
+- Truncated normal frailty model
+- Mixture of inverse gaussian frailty model
+- Mixture of Birnbaum-Saunders frailty model
 }
 \value{
 A complete summary for the coefficients extracted from a "extrafrail" object.  
