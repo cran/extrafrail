@@ -1,3 +1,7 @@
+### 1.12
+
+* corrected the frailty variance for the MIG and MBS models
+
 ### 1.11
 
 * corrected the observed log-likelihood function for the MIG model
