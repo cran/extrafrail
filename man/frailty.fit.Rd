@@ -24,7 +24,8 @@ A data.frame in which the formula argument can be evaluated
 }
   \item{dist.frail}{
 the distribution assumed for the frailty. Supported values: gamma (GA also is valid), IG (inverse gaussian), WL
-(weighted Lindley), BS (Birnbaum-Saunders), TN (truncated normal), MIG (mixture of IG) and MBS (mixture of BS).
+(weighted Lindley), BS (Birnbaum-Saunders), TN (truncated normal), MIG (mixture of IG), MBS (mixture of BS) and
+GE (generalized exponential).
 }
   \item{dist}{
 the distribution assumed for the basal model. Supported values: weibull, pe (piecewise exponential),
@@ -64,13 +65,13 @@ option is specified for the basal distribution)}
 }
 \references{
 Gallardo, D.I., Bourguignon, M. (2022) The shared weighted Lindley frailty model for
-cluster failure time data. Submitted.
+cluster failure time data. Biometrical journal, 67, e70044.
 
 Gallardo, D.I., Bourguignon, M., Romeo, J. (2024) Birnbaum-Saunders frailty regression 
 models for clustered survival data. Statistics and Computing, 34, 141.
 }
 \author{
-Diego Gallardo and Marcelo Bourguignon.
+Diego Gallardo, Marcelo Bourguignon and John Santibanez.
 }
 \examples{
 \donttest{

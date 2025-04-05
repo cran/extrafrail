@@ -3861,6 +3861,544 @@ d.Var_U <- function(m) {((2 * m * (2 - m) / (1 - m)^2) * ((m^2 / (1 - m)) + 1)^2
   }
   object.out
 }
+#--------------------------------#
+#	ADD GE FRAILTY MODEL	#
+#--------------------------------#
+
+    frailtyGE <- function(formula, data, dist = "np", prec = 1e-04, 
+        max.iter = 1000, part=NULL) {
+        fail.cluster <- function(delta, indice) {
+            sum.fail <- function(ind, delta) {
+                sum(delta[which(indice == ind)])
+            }
+            unlist(lapply(1:max(indice), sum.fail, delta = delta))
+        }
+	vari.ge <- function(alpha){ (trigamma(1)-trigamma(alpha+1))/(digamma(alpha+1)-digamma(1))^2 }
+	dg <- function(x) {-psigamma(x+1,2)/(digamma(x+1)-digamma(1))^2-2*trigamma(x+1)*(trigamma(1)-trigamma(x+1))/(digamma(x+1)-digamma(1))^3} #derivative of theta in relacion to alpha
+      tau.GE.aux <- function(x, theta) {
+	   eq.vari.ge=function(alpha, theta){vari.ge(alpha)-theta}
+	   alpha=uniroot(eq.vari.ge, lower=0.00001, upper=40, theta=theta, extendInt="yes")$root
+    	   y = digamma(alpha+1)-digamma(1)
+    	   L = exp(lgamma(alpha+1) + lgamma(x/y+1) - lgamma(alpha+x/y+1))
+	   aux = trigamma(x/y+1) - trigamma(alpha+x/y+1) + (digamma(x/y+1)-digamma(alpha+x/y+1))^2
+	   x*L^2*aux/y^2
+      }
+	L.deriv<-function(alpha, s, n){
+	   y = digamma(alpha+1)-digamma(1)
+	   C <- function(x,i) {R = c(); for (j in 1:length(x)) R[j] = factorial(i-1)/(factorial(x[j]-1)*factorial(i-x[j])); R}
+	   g <- function(x) {RR=c(); for(j in 1:length(x)) RR[j] = psigamma(x[j]-1,s/y+1)-psigamma(x[j]-1,alpha+s/y+1); RR}
+	   L_i = c(); L0 = exp(lgamma(alpha+1)+lgamma(s/y+1)-lgamma(alpha+s/y+1))
+	   if(n==0){return(L0)}
+	   L_i[1] = L0*g(1)/y
+	   if (n>1)
+	   {
+	  	for (i in 2:n) L_i[i] = sum(c(C(1:(i-1),i)*L_i[(i-1):1]*g(1:(i-1))/y^(1:(i-1)), L0*g(i)/y^(i)))
+	   }
+	   L_i[n]
+	}
+	C.k.aux<-function(x, k, ri, bi, alpha){
+		exp((ri+k)*log(x)-x*bi+(alpha-1)*log(1-exp(-x)))}
+	C.k<-function(k, ri, bi, alpha){integrate(C.k.aux, lower=0, upper=Inf, k=k, 
+		ri=ri, bi=bi, alpha=alpha, abs.tol=1e-15)$value}
+	C.k2.aux<-function(x, ri, bi, alpha){
+		log(1-exp(-x))*exp(ri*log(x)-x*bi+(alpha-1)*log(1-exp(-x)))}
+	C.k2<-function(ri, bi, alpha){integrate(C.k2.aux, lower=0, upper=Inf, 
+		ri=ri, bi=bi, alpha=alpha, abs.tol=1e-15)$value}
+	tau.GE=function(theta) 4*integrate(tau.GE.aux,lower=0,upper=Inf,theta=theta, stop.on.error = FALSE)$value-1
+#----------------------------------------------------
+# BASELINE WEIBULL
+#----------------------------------------------------
+          if (dist == "weibull") {
+	        observed.llike.0.ge.dist <- function(eta, t, delta, 
+                ind, dist, part=NULL) {
+                rho = eta[1]
+                lambda = eta[2]
+                alpha = eta[3]
+                Lambda0 = H.base(t, lambda, rho, dist)
+                log.lambda0 = h.base(t, lambda, rho, dist)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0, ind) 
+                P1 = log((-1)^r*mapply(L.deriv, s=b, alpha=alpha, n=r))
+                P2 = delta * log.lambda0
+                -(sum(P1) + sum(P2))
+          }
+            observed.llike.ge.dist <- function(eta, t, delta, 
+                x, ind, dist, part=NULL) {
+                beta = eta[1:ncol(x)]
+                rho = eta[ncol(x) + 1]
+                lambda = eta[ncol(x) + 2]
+                alpha = eta[ncol(x) + 3]
+                Lambda0 = H.base(t, lambda, rho, dist)
+                log.lambda0 = h.base(t, lambda, rho, dist)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0 * exp(x %*% beta), ind)
+                P1 = log((-1)^r*mapply(L.deriv, s=b, alpha=alpha, n=r))
+                P2 = delta * x %*% beta + delta * log.lambda0
+                -(sum(P1) + sum(P2))
+            }
+            observed.llike.ge.dist.Q1.0 <- function(eta, alpha,
+                w1, t, delta, x, ind, dist, part=NULL) {
+                  rho = exp(eta[1])
+                  lambda = exp(eta[2])
+		    gamma = digamma(alpha+1)-digamma(1)
+                Lambda0 = H.base(t, lambda, rho, dist)
+                log.lambda0 = h.base(t, lambda, rho, dist)
+                P1 = delta * log.lambda0 - w1[ind] * Lambda0 / gamma
+                -sum(P1)
+            }
+            observed.llike.ge.dist.Q2.0 <- function(eta, rho=1, lambda,
+                w1, w2, t, delta, x, ind, dist, part=NULL) {
+                  alpha = eta
+		    gamma = digamma(alpha+1)-digamma(1)
+                Lambda0 = H.base(t, lambda, rho, dist)
+                P1 = - w1[ind] * Lambda0 / gamma - delta * log(gamma)
+		    P2 =  log(alpha) + alpha * w2
+                -(sum(P1)+sum(P2))
+            }		
+            observed.llike.ge.dist.Q1 <- function(eta, alpha,
+                w1, t, delta, x, ind, dist, part=NULL) {
+                  beta = eta[1:ncol(x)]
+                  rho = exp(eta[ncol(x) + 1])
+                  lambda = exp(eta[ncol(x) + 2])
+		    gamma = digamma(alpha+1)-digamma(1)
+                Lambda0 = H.base(t, lambda, rho, dist)
+                log.lambda0 = h.base(t, lambda, rho, dist)
+                P1 = delta * x %*% beta + delta * log.lambda0 - 
+                  w1[ind] * Lambda0 * exp(x %*% beta) / gamma
+                -sum(P1)
+            }
+            observed.llike.ge.dist.Q2 <- function(eta, beta, rho=1, lambda,
+                w1, w2, t, delta, x, ind, dist, part=NULL) {
+                  alpha = eta
+		    gamma = digamma(alpha+1)-digamma(1)
+                Lambda0 = H.base(t, lambda, rho, dist)
+                P1 = - w1[ind] * Lambda0 * exp(x %*% beta) / gamma - delta*log(gamma)
+		    P2 = log(alpha) + alpha * w2
+                -(sum(P1)+sum(P2))
+            }
+            m = length(t)
+            alpha.last = 2
+	   	theta.last = vari.ge(alpha.last)
+            w1.last = rep(1, m)
+            w2.last = rep(1, m)
+            r = fail.cluster(delta, cluster)
+            dif = 10
+            i = 1
+            rho.last = 1
+            lambda.last = 1
+            if (ncol(x) == 0) {
+                while (i <= max.iter & dif > prec) {
+                  Lambda0.last = H.base(t, lambda.last, rho.last, dist)
+			H0=fail.cluster(Lambda0.last, cluster)
+			   bi = 1+H0/(digamma(alpha.last+1)-digamma(1)) 
+  			C0=mapply(C.k, k=0, ri=r, bi=bi, alpha=alpha.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=bi, alpha=alpha.last)
+                  C2=mapply(C.k2, ri=r, bi=bi, alpha=alpha.last)
+                  w1.new = C1/C0
+			w2.new = C2/C0
+                  aux.1 = optim(c(log(rho.last), log(lambda.last)), 
+                    observed.llike.ge.dist.Q1.0, method = "BFGS", 
+                    alpha = alpha.last, w1 = w1.new, t = t, delta = delta, 
+                    x = x, ind = ind, dist = dist)
+                    rho.new = exp(aux.1$par[1])
+                    lambda.new = exp(aux.1$par[2])
+			alpha.new = optim(alpha.last, observed.llike.ge.dist.Q2.0, w1 = w1.new, w2 = w2.new,
+			  rho=rho.new, lambda=lambda.new, t=t, delta=delta, ind=ind, dist=dist,
+                    method = "Brent", lower = 0, upper = min(10,alpha.last+3))$par
+			  theta.new = vari.ge(alpha.new) 
+                  dif = max(abs(c(rho.last, lambda.last, theta.last) - 
+                    		  c(rho.new, lambda.new, theta.new)))
+                  theta.last = theta.new
+                  rho.last = rho.new
+                  lambda.last = lambda.new
+                  alpha.last = alpha.new
+                  w1.last = w1.new
+                  w2.last = w2.new
+                  i = i + 1
+                }
+                aux.se = hessian(observed.llike.0.ge.dist, x0 = c(rho.last, 
+                  lambda.last, alpha.last), t = t, delta = delta, 
+                  ind = cluster, dist = dist)
+                se = sqrt(diag(solve(aux.se)))
+        		se[length(se)] = se[length(se)] * abs(dg(alpha.last))
+		    llike.obs = -observed.llike.0.ge.dist(c(rho.last, 
+                  lambda.last, alpha.last), t = t, delta = delta, 
+                  ind = cluster, dist = dist)
+                para = c(rho.new, lambda.new, theta.new)
+                names(para) = names(se) = c("rho", "lambda", 
+                  "theta")
+            }
+            if (ncol(x) > 0) {
+                cox.aux = survreg(Surv(t, delta) ~ x, dist = "weibull")
+                beta.last = -coef(cox.aux)[-1]/cox.aux$scale
+                lambda.last = exp(-coef(cox.aux)[1]/cox.aux$scale)
+                rho.last = 1/cox.aux$scale
+                while (i <= max.iter & dif > prec) {
+                  Lambda0.last = H.base(t, lambda.last, rho.last, dist)
+			   H0 = fail.cluster(Lambda0.last*exp(x%*%beta.last), cluster)
+			   bi = 1+H0/(digamma(alpha.last+1)-digamma(1)) 
+			C0=mapply(C.k, k=0, ri=r, bi=bi, alpha=alpha.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=bi, alpha=alpha.last)
+                  C2=mapply(C.k2, ri=r, bi=bi, alpha=alpha.last)
+                   w1.new = C1/C0
+			 w2.new = C2/C0
+                  aux.1 = optim(c(beta.last, log(rho.last), log(lambda.last)), 
+                    observed.llike.ge.dist.Q1, method = "BFGS", 
+                    alpha = alpha.last, w1 = w1.new, t = t, delta = delta, 
+                    x = x, ind = ind, dist = dist)
+                  beta.new = aux.1$par[1:ncol(x)]
+                  rho.new = exp(aux.1$par[ncol(x) + 1])
+                  lambda.new = exp(aux.1$par[ncol(x) + 2])
+			alpha.new = optim(alpha.last, observed.llike.ge.dist.Q2, w1 = w1.new, w2 = w2.new, 
+				rho=rho.new, lambda=lambda.new, beta=beta.new, t=t, delta=delta, x=x, ind=ind, dist=dist,
+                   	method = "Brent", lower = 0, upper = min(10,alpha.last+3))$par
+			theta.new = vari.ge(alpha.new)
+                  dif = max(abs(c(beta.last, rho.last, lambda.last, theta.last) - 
+					  c(beta.new, rho.new, lambda.new, theta.new)))
+                  beta.last = beta.new
+                  theta.last = theta.new
+                  rho.last = rho.new
+                  lambda.last = lambda.new
+			alpha.last = alpha.new
+                  w1.last = w1.new
+                  w2.last = w2.new
+                  i = i + 1
+                }
+                aux.se = hessian(observed.llike.ge.dist, x0 = c(beta.last, 
+                  rho.last, lambda.last, alpha.last), t = t, 
+                  x = x, delta = delta, ind = cluster, dist = dist)
+                se = sqrt(diag(solve(aux.se)))
+			se[length(se)] = se[length(se)] * abs(dg(alpha.last))
+                llike.obs = -observed.llike.ge.dist(c(beta.last, 
+                  rho.last, lambda.last, alpha.last), t = t, 
+                  x = x, delta = delta, ind = cluster, dist = dist)
+                para = c(beta.new, rho.new, lambda.new, theta.new)
+                names(para) = names(se) = c(colnames(x), "rho", 
+                  "lambda", "theta")
+            }
+            object.out <- list(coefficients = para, se = se, 
+                z1 = w1.new/(digamma(alpha.new+1)-digamma(1)))
+            class(object.out) <- "extrafrail"
+            object.out$t <- t
+            object.out$delta <- delta
+            object.out$id <- cluster
+            object.out$x <- x
+            object.out$dist <- dist
+            object.out$dist.frail <- "GE"
+            object.out$tau <- tau.GE(theta.last)
+            object.out$logLik <- llike.obs
+        }
+#----------------------------------------------------
+# BASELINE PE O EXP
+#----------------------------------------------------
+	if (dist == "pe" | dist=="exponential") {
+		 dist.aux="pe"
+		if(dist=="exponential"){dist="pe"; part=0; dist.aux="exponential"}
+            observed.llike.0.ge.dist <- function(eta, t, delta, 
+                ind, dist, part=NULL) {
+                lambda = eta[1:length(part)]
+                alpha = eta[length(part)+1]
+                Lambda0 = H.base(t, lambda=lambda, dist=dist, part=part)
+                log.lambda0 = h.base(t, lambda=lambda, dist=dist, part=part)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0, ind)
+                P1 = log((-1)^r*mapply(L.deriv, s=b, alpha=alpha, n=r))
+                P2 = delta * log.lambda0
+                -(sum(P1) + sum(P2))
+            }
+            observed.llike.ge.dist <- function(eta, t, delta, 
+                x, ind, dist, part=NULL) {
+                beta = eta[1:ncol(x)]
+                lambda = eta[ncol(x)+1:length(part)]
+                alpha = eta[ncol(x) + length(part) + 1]
+                Lambda0 = H.base(t, lambda=lambda, dist=dist, part=part)
+                log.lambda0 = h.base(t, lambda=lambda, dist=dist, part=part)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0 * exp(x %*% beta), ind)
+                P1 = log((-1)^r*mapply(L.deriv, s=b, alpha=alpha, n=r))
+                P2 = delta * x %*% beta + delta * log.lambda0
+                -(sum(P1) + sum(P2))
+            }
+            observed.llike.ge.dist.Q1.0 <- function(eta, alpha,
+                w1, t, delta, x, ind, dist, part=NULL) {
+                  lambda = exp(eta[1:length(part)])
+		    gamma = digamma(alpha+1)-digamma(1)
+                Lambda0 = H.base(t, lambda=lambda, dist=dist, part=part)
+                log.lambda0 = h.base(t, lambda=lambda, dist=dist, part=part)
+                P1 = delta * log.lambda0 - w1[ind] * Lambda0 / gamma
+                -sum(P1)
+            }
+            observed.llike.ge.dist.Q2.0 <- function(eta, rho=1, lambda,
+                w1, w2, t, delta, x, ind, dist, part=NULL) {
+                  alpha = eta
+		    gamma = digamma(alpha+1)-digamma(1)
+                Lambda0 = H.base(t, lambda, rho, dist)
+                P1 = - w1[ind] * Lambda0 / gamma - delta * log(gamma)
+		    P2 =  log(alpha) + alpha * w2
+                -(sum(P1)+sum(P2))
+            }		
+            observed.llike.ge.dist.Q1 <- function(eta, alpha,
+                w1, t, delta, x, ind, dist, part=NULL) {
+                  beta = eta[1:ncol(x)]
+                  lambda = exp(eta[ncol(x)+1:length(part)])
+		    gamma = digamma(alpha+1)-digamma(1)
+    		    Lambda0 = H.base(t, lambda=lambda, dist=dist, part=part)
+                log.lambda0 = h.base(t, lambda=lambda, dist=dist, part=part)
+                P1 = delta * x %*% beta + delta * log.lambda0 - 
+              	w1[ind] * Lambda0 * exp(x %*% beta) / gamma
+                -sum(P1)
+            }
+            observed.llike.ge.dist.Q2 <- function(eta, beta, rho=1, lambda,
+                w1, w2, t, delta, x, ind, dist, part=NULL) {
+                  alpha = eta
+		    gamma = digamma(alpha+1)-digamma(1)
+                Lambda0 = H.base(t, lambda, rho, dist)
+                P1 = - w1[ind] * Lambda0 * exp(x %*% beta) / gamma - delta*log(gamma)
+		    P2 = log(alpha) + alpha * w2
+                -(sum(P1)+sum(P2))
+            }
+            m = length(t)
+		alpha.last=2
+            theta.last = vari.ge(alpha.last)
+            w1.last = rep(1, m)
+            w2.last = rep(1, m)
+            r = fail.cluster(delta, cluster)
+            dif = 10
+            i = 1
+            lambda.last = rep(1/mean(t), length(part))
+            if (ncol(x) == 0) {
+                while (i <= max.iter & dif > prec) {
+                  Lambda0.last = H.base(t, lambda=lambda.last, dist=dist, part=part)
+                  H0=fail.cluster(Lambda0.last, cluster)
+			   bi = 1+H0/(digamma(alpha.last+1)-digamma(1)) 
+  			C0=mapply(C.k, k=0, ri=r, bi=bi, alpha=alpha.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=bi, alpha=alpha.last)
+                  C2=mapply(C.k2, ri=r, bi=bi, alpha=alpha.last)
+                  w1.new = C1/C0
+			w2.new = C2/C0
+                  aux.1 = optim(log(lambda.last), 
+                    observed.llike.ge.dist.Q1.0, method = "BFGS", 
+                    w1 = w1.new, t = t, delta = delta, alpha = alpha.last,
+                    x = x, ind = ind, dist = dist, part = part)
+                    lambda.new = exp(aux.1$par)
+			  alpha.new = optim(alpha.last, observed.llike.ge.dist.Q2.0, w1 = w1.new, w2 = w2.new,
+                       method = "Brent", lower = 0, upper = min(10,alpha.last+3))$par
+			  theta.new = vari.ge(alpha.new) 				
+                  dif = max(abs(c(lambda.last, theta.last) - 
+                    		  c(lambda.new, theta.new)))
+                  theta.last = theta.new
+                  lambda.last = lambda.new
+			alpha.last = alpha.new
+                  w1.last = w1.new
+                  w2.last = w2.new
+                  i = i + 1
+                }
+                aux.se = hessian(observed.llike.0.ge.dist, x0 = c(lambda.last, 
+		       alpha.last), t = t, delta = delta, 
+                ind = cluster, dist = dist, part=part)
+                se = sqrt(diag(solve(aux.se)))
+                llike.obs = -observed.llike.0.ge.dist(c(lambda.last, alpha.last), t = t, delta = delta, 
+                   ind = cluster, dist = dist, part=part)	
+			 se[length(se)] = se[length(se)] * abs(dg(alpha.last))
+                para = c(lambda.new, theta.new)
+                names(para) = names(se) = c(paste("lambda",1:length(part),sep=""), "theta")
+                if(dist.aux=="exponential") names(para) = names(se) = c("lambda", "theta")
+            }
+            if (ncol(x) > 0) {
+                cox.aux = survreg(Surv(t, delta) ~ x, dist = "weibull")
+                beta.last = -coef(cox.aux)[-1]/cox.aux$scale
+                lambda.last = rep(exp(-coef(cox.aux)[1]/cox.aux$scale), length(part))
+              while (i <= max.iter & dif > prec) {
+                  Lambda0.last = H.base(t, lambda=lambda.last, dist=dist, part=part)
+			H0=fail.cluster(Lambda0.last*exp(x%*%beta.last), cluster)
+			   bi = 1+H0/(digamma(alpha.last+1)-digamma(1)) 
+		     C0=mapply(C.k, k=0, ri=r, bi=bi, alpha=alpha.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=bi, alpha=alpha.last)
+                  C2=mapply(C.k2, ri=r, bi=bi, alpha=alpha.last)
+                   w1.new = C1/C0
+		      w2.new = C2/C0
+                  aux.1 = optim(c(beta.last, log(lambda.last)), 
+                    observed.llike.ge.dist.Q1, method = "BFGS", 
+                    w1 = w1.new, t = t, delta = delta, alpha = alpha.last,
+                    x = x, ind = ind, dist = dist, part=part)
+                  beta.new = aux.1$par[1:ncol(x)]
+                    lambda.new = exp(aux.1$par[ncol(x) + 1:length(part)])
+                    alpha.new = optim(alpha.last, observed.llike.ge.dist.Q2, w1 = w1.new, w2 = w2.new, 
+				lambda=lambda.new, beta=beta.new, t=t, delta=delta, x=x, ind=ind, dist=dist, part=part,
+                   	method = "Brent", lower = 0, upper = min(10,alpha.last+3))$par	
+		        theta.new = vari.ge(alpha.new)
+                  dif = max(abs(c(beta.last, lambda.last, theta.last) - 
+					  c(beta.new, lambda.new, theta.new)))
+                  beta.last = beta.new
+                  theta.last = theta.new
+                  lambda.last = lambda.new
+			alpha.last = alpha.new
+                  w1.last = w1.new
+                  w2.last = w2.new
+                  i = i + 1
+                }
+                aux.se = hessian(observed.llike.ge.dist, x0 = c(beta.last, 
+                  lambda.last, alpha.last), t = t, 
+                  x = x, delta = delta, ind = cluster, dist = dist, part=part)
+                se = sqrt(diag(solve(aux.se)))
+			se[length(se)] = se[length(se)] * abs(dg(alpha.last))
+                llike.obs = -observed.llike.ge.dist(c(beta.last, 
+                  lambda.last, alpha.last), t = t, 
+                  x = x, delta = delta, ind = cluster, dist = dist, part=part)
+			para = c(beta.last, lambda.last, theta.last)
+                names(para) = names(se) = c(colnames(x), paste("lambda",1:length(part),sep=""), "theta")
+		if(dist.aux=="exponential") names(para) = names(se) = c(colnames(x), "lambda", "theta")
+            }
+            object.out <- list(coefficients = para, se = se, 
+                z1 = w1.new/(digamma(alpha.new+1)-digamma(1)))
+            class(object.out) <- "extrafrail"
+            object.out$t <- t
+            object.out$delta <- delta
+            object.out$id <- cluster
+            object.out$x <- x
+            object.out$dist <- dist.aux
+            object.out$dist.frail <- "GE"
+            object.out$tau <- tau.GE(theta.last)
+            object.out$logLik <- llike.obs
+	    if(dist.aux=="pe") object.out$part <- part
+        }
+#----------------------------------------------------
+# BASELINE NP
+#----------------------------------------------------
+	if (dist == "np") {
+            observed.llike.0.ge <- function(eta, t, delta, ind, 
+                cox.aux) {
+                alpha = eta
+                Lambda0 = cumhazard.basal(t, cox.aux)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0, ind)
+                P1 = log((-1)^r*mapply(L.deriv, s=b, alpha=alpha, n=r))
+                -sum(P1)
+            }
+            observed.llike.ge <- function(eta, t, delta, x, ind, 
+                cox.aux) {
+                alpha = eta[length(eta)]
+                beta = eta[-length(eta)]
+                Lambda0 = cumhazard.basal(t, cox.aux)
+                r = fail.cluster(delta, ind)
+                b = fail.cluster(Lambda0 * exp(x %*% beta), ind)
+                P1 = log((-1)^r*mapply(L.deriv, s=b, alpha=alpha, n=r))
+                P2 = delta * x %*% beta
+                -(sum(P1) + sum(P2))
+            }
+            cumhazard.basal <- function(t, coxph.object) {
+                ind.min <- function(t0, time) {
+                  min(which(time >= t0))
+                }
+                bb = basehaz(coxph.object)
+                tt = bb$time
+                bb$hazard[unlist(lapply(t, ind.min, time = tt))]
+            }
+            observed.llike.ge.Q2.0 <- function(eta, Lambda0,
+                w1, w2, t, delta, x, ind, dist, part=NULL) {
+                  alpha = eta
+		    gamma = digamma(alpha+1)-digamma(1)
+                P1 = - w1[ind] * Lambda0 / gamma - delta * log(gamma)
+		    P2 =  log(alpha) + alpha * w2
+                -(sum(P1)+sum(P2))
+            }	
+            observed.llike.ge.Q2 <- function(eta, beta, Lambda0,
+                w1, w2, t, delta, x, ind, dist, part=NULL) {
+                  alpha = eta
+		    gamma = digamma(alpha+1)-digamma(1)
+                P1 = - w1[ind] * Lambda0 * exp(x %*% beta) / gamma - delta*log(gamma)
+		    P2 = log(alpha) + alpha * w2
+                -(sum(P1)+sum(P2))
+            }
+            m = length(t)
+		alpha.last=2
+            theta.last = vari.ge(alpha.last)
+            w1.last = rep(1, m)
+            w2.last = rep(1, m)
+            r = fail.cluster(delta, cluster)
+            dif = 10
+            i = 1
+            if (ncol(x) == 0) {
+                while (i <= max.iter & dif > prec) {
+                  cox.aux = coxph(Surv(t, delta) ~ offset(log(w1.last[cluster]/(digamma(alpha.last+1)-digamma(1)))))
+                  Lambda0.new = cumhazard.basal(t, cox.aux)
+                  H0 = fail.cluster(Lambda0.new, cluster)
+			   bi = 1+H0/(digamma(alpha.last+1)-digamma(1)) 
+			C0=mapply(C.k, k=0, ri=r, bi=bi, alpha=alpha.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=bi, alpha=alpha.last)
+                  C2=mapply(C.k2, ri=r, bi=bi, alpha=alpha.last)
+                  w1.new = C1/C0
+			w2.new = C2/C0
+			alpha.new = optim(alpha.last, observed.llike.ge.Q2.0, w1 = w1.new, w2 = w2.new,
+			  Lambda0=Lambda0.new, t=t, delta=delta, ind=ind, dist=dist,
+                    method = "Brent", lower = 0, upper = min(10,alpha.last+3))$par
+			theta.new=vari.ge(alpha.new)
+                  dif = abs(theta.last - theta.new)
+                  theta.last = theta.new
+			alpha.last = alpha.new
+                  w1.last = w1.new
+                  w2.last = w2.new
+                  i = i + 1
+                }
+                aux.se = hessian(observed.llike.0.ge, x0 = c(alpha.last), 
+                  t = t, delta = delta, ind = cluster, cox.aux = cox.aux)
+                se = sqrt(diag(solve(aux.se)))
+			se[length(se)] = se[length(se)] * abs(dg(alpha.last))
+			para = c(theta.new)
+                names(para) = names(se) = "theta"
+            }
+            if (ncol(x) > 0) {
+                cox.aux = coxph(Surv(t, delta) ~ x)
+                beta.last = coef(cox.aux)
+                while (i <= max.iter & dif > prec) {
+                  cox.aux = coxph(Surv(t, delta) ~ x + offset(log(w1.last[cluster]/(digamma(alpha.last+1)-digamma(1)))))
+                  beta.new = coef(cox.aux)
+                  Lambda0.new = cumhazard.basal(t, cox.aux)
+                  H0 = fail.cluster(Lambda0.new*exp(x%*%beta.last), cluster)
+			   bi = 1+H0/(digamma(alpha.last+1)-digamma(1)) 
+			C0=mapply(C.k, k=0, ri=r, bi=bi, alpha=alpha.last)
+                  C1=mapply(C.k, k=1, ri=r, bi=bi, alpha=alpha.last)
+                  C2=mapply(C.k2, ri=r, bi=bi, alpha=alpha.last)
+                  w1.new = C1/C0
+			w2.new = C2/C0
+			alpha.new = optim(alpha.last, observed.llike.ge.Q2, w1 = w1.new, w2 = w2.new,
+			  beta=beta.new, Lambda0=Lambda0.new, t=t, delta=delta, ind=ind, dist=dist, x=x,
+                    method = "Brent", lower = 0, upper = min(10,alpha.last+3))$par
+			theta.new=vari.ge(alpha.new)
+                  dif = max(abs(c(beta.last, theta.last) - c(beta.new, 
+                    theta.new)))
+                  beta.last = beta.new
+                  theta.last = theta.new
+			alpha.last=alpha.new
+                  w1.last = w1.new
+                  w2.last = w2.new
+                  i = i + 1
+                }
+                aux.se = hessian(observed.llike.ge, x0 = c(beta.last, 
+                  alpha.last), t = t, delta = delta, x = x, ind = cluster, 
+                  cox.aux = cox.aux)
+                se = sqrt(diag(solve(aux.se)))
+			se[length(se)] = se[length(se)] * abs(dg(alpha.last))
+			para = c(beta.new, theta.new)
+                names(para) = names(se) = c(colnames(x), "theta")
+            }
+            bb = basehaz(cox.aux)
+            Lambda0 = cbind(bb$time, bb$hazard)
+            colnames(Lambda0) = c("time", "hazard")
+            object.out <- list(coefficients = para, se = se, 
+                z1 = w1.new/(digamma(alpha.new+1)-digamma(1)))
+            class(object.out) <- "extrafrail"
+            object.out$t <- t
+            object.out$delta <- delta
+            object.out$id <- cluster
+            object.out$Lambda0 <- Lambda0
+            object.out$x <- x
+            object.out$dist <- dist
+            object.out$dist.frail <- "GE"
+            object.out$tau <- tau.GE(theta.last)
+        }
+        object.out
+    }
     if (dist.frail == "GA") 
         val <- frailtyGA(formula, data, dist = dist, prec = prec, 
             max.iter = max.iter, part = part)
@@ -3881,6 +4419,9 @@ d.Var_U <- function(m) {((2 * m * (2 - m) / (1 - m)^2) * ((m^2 / (1 - m)) + 1)^2
             max.iter = max.iter, part = part)
     if (dist.frail == "MBS") 
         val <- frailtyMBS(formula, data, dist = dist, prec = prec, 
+            max.iter = max.iter, part = part)
+    if (dist.frail == "GE") 
+        val <- frailtyGE(formula, data, dist = dist, prec = prec, 
             max.iter = max.iter, part = part)
     val
 }

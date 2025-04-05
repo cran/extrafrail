@@ -174,6 +174,23 @@ summary.extrafrail <- function (object, ...)
                   ifelse(object$dist == "pe", "piecewise exponential", 
                     object$dist)), " survival function\n", sep = "")
     }
+    if (object$dist.frail == "GE") {
+        if (uni) 
+            cat("Univariate generalized exponential frailty model with\n", 
+                ifelse(object$dist == "np", "non-parametric", 
+                  ifelse(object$dist == "pe", "piecewise exponential", 
+                    object$dist)), " survival function\n", sep = "")
+        if (bi) 
+            cat("Bivariate generalized exponential frailty model with\n", 
+                ifelse(object$dist == "np", "non-parametric", 
+                  ifelse(object$dist == "pe", "piecewise exponential", 
+                    object$dist)), " survival function\n", sep = "")
+        if (!uni & !bi) 
+            cat("Multivariate generalized exponential frailty model with\n", 
+                ifelse(object$dist == "np", "non-parametric", 
+                  ifelse(object$dist == "pe", "piecewise exponential", 
+                    object$dist)), " survival function\n", sep = "")
+    }
     if (length(object$coefficients) > 1) {
         if (object$dist == "np") {
             cat("-------------------------------------------------------------------------\n")

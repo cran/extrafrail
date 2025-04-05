@@ -1,3 +1,6 @@
+### 1.13
+* option GE (generalized exponential) was added in frailty.fit function
+
 ### 1.12
 
 * corrected the frailty variance for the MIG and MBS models
